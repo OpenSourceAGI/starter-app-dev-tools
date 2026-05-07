@@ -1,4 +1,4 @@
-import verifyPhone from '../src/verify-phone.js';
+import verifyPhone from '../src/verify-phone';
 
 // Example 1: Using libphonenumber-js for VoIP detection with full metadata
 async function exampleWithLibPhoneNumberVoipDetection() {

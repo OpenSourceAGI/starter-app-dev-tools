@@ -1,7 +1,4 @@
-import verifyPhone from '../src/verify-phone.js';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import verifyPhone from '../src/verify-phone';
 
 // Basic usage with custom code
 const result = await verifyPhone({

@@ -1,1 +1,0 @@
-const t=typeof window<"u"&&window.location.hostname.includes("localhost"),a=t?"http://localhost:5173":"https://starterdocs.com",o="your-google-client-id-here",s="Starter Docs",e="Svelte Starter Full Stack App with Docs and API",A="support@"+a.split("//")[1],l="your-google-analytics-id",c="/api/",i="January 1, 2025";export{s as A,l as G,i as L,a as P,c as S,A as a,o as b,e as c};

@@ -1,11 +1,15 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { createApp } from '../src/verify-phone-server.js';
+import { createApp } from '../src/verify-phone-server';
+
+declare global {
+  // eslint-disable-next-line no-var
+  var env: Record<string, string>;
+}
 
 describe('SMS Verification API', () => {
-  let app;
+  let app: ReturnType<typeof createApp>;
 
   beforeEach(() => {
-    // Create a fresh app instance for each test
     app = createApp(globalThis.env);
   });
 
@@ -13,7 +17,7 @@ describe('SMS Verification API', () => {
     it('should return health status', async () => {
       const req = new Request('http://localhost/health');
       const res = await app.request(req, globalThis.env);
-      const data = await res.json();
+      const data: any = await res.json();
 
       expect(res.status).toBe(200);
       expect(data).toMatchObject({
@@ -27,7 +31,7 @@ describe('SMS Verification API', () => {
     it('should require API key authentication', async () => {
       const req = new Request('http://localhost/api/send-verification?phoneNumber=%2B1234567890');
       const res = await app.request(req, globalThis.env);
-      const data = await res.json();
+      const data: any = await res.json();
 
       expect(res.status).toBe(401);
       expect(data).toMatchObject({
@@ -42,7 +46,7 @@ describe('SMS Verification API', () => {
         }
       });
       const res = await app.request(req, globalThis.env);
-      const data = await res.json();
+      const data: any = await res.json();
 
       expect(res.status).toBe(401);
       expect(data).toMatchObject({
@@ -57,7 +61,7 @@ describe('SMS Verification API', () => {
         }
       });
       const res = await app.request(req, globalThis.env);
-      const data = await res.json();
+      const data: any = await res.json();
 
       expect(res.status).toBe(200);
       expect(data.success).toBe(true);
@@ -70,7 +74,7 @@ describe('SMS Verification API', () => {
         }
       });
       const res = await app.request(req, globalThis.env);
-      const data = await res.json();
+      const data: any = await res.json();
 
       expect(res.status).toBe(400);
       expect(data).toMatchObject({
@@ -85,7 +89,7 @@ describe('SMS Verification API', () => {
         }
       });
       const res = await app.request(req, globalThis.env);
-      const data = await res.json();
+      const data: any = await res.json();
 
       expect(res.status).toBe(200);
       expect(data.success).toBe(true);
@@ -98,7 +102,7 @@ describe('SMS Verification API', () => {
         }
       });
       const res = await app.request(req, globalThis.env);
-      const data = await res.json();
+      const data: any = await res.json();
 
       expect(res.status).toBe(200);
       expect(data.success).toBe(true);
@@ -111,7 +115,7 @@ describe('SMS Verification API', () => {
         }
       });
       const res = await app.request(req, globalThis.env);
-      const data = await res.json();
+      const data: any = await res.json();
 
       expect(res.status).toBe(200);
       expect(data.success).toBe(true);
@@ -122,7 +126,7 @@ describe('SMS Verification API', () => {
     it('should require API key authentication', async () => {
       const req = new Request('http://localhost/api/verify-code?phoneNumber=%2B1234567890&code=123456');
       const res = await app.request(req, globalThis.env);
-      const data = await res.json();
+      const data: any = await res.json();
 
       expect(res.status).toBe(401);
       expect(data).toMatchObject({
@@ -137,7 +141,7 @@ describe('SMS Verification API', () => {
         }
       });
       const res = await app.request(req, globalThis.env);
-      const data = await res.json();
+      const data: any = await res.json();
 
       expect(res.status).toBe(401);
       expect(data).toMatchObject({
@@ -152,7 +156,7 @@ describe('SMS Verification API', () => {
         }
       });
       const res = await app.request(req, globalThis.env);
-      const data = await res.json();
+      const data: any = await res.json();
 
       expect(res.status).toBe(400);
       expect(data).toMatchObject({
@@ -167,7 +171,7 @@ describe('SMS Verification API', () => {
         }
       });
       const res = await app.request(req, globalThis.env);
-      const data = await res.json();
+      const data: any = await res.json();
 
       expect(res.status).toBe(400); // Will fail because no code was sent, but auth works
       expect(data.error).toBeDefined();
@@ -178,7 +182,7 @@ describe('SMS Verification API', () => {
     it('should serve OpenAPI documentation', async () => {
       const req = new Request('http://localhost/openapi.json');
       const res = await app.request(req, globalThis.env);
-      const data = await res.json();
+      const data: any = await res.json();
 
       expect(res.status).toBe(200);
       expect(data).toMatchObject({

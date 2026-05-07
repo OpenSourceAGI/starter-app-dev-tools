@@ -16,10 +16,20 @@ import { secureHeaders } from "hono/secure-headers";
 import { rateLimiter } from "hono-rate-limiter";
 import { swaggerUI } from "@hono/swagger-ui";
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
-import verifyPhone from "./verify-phone.ts";
+import verifyPhone from "./verify-phone";
+
+interface Env {
+  Bindings: {
+    API_KEY?: string;
+    AWS_ACCESS_KEY_ID?: string;
+    AWS_SECRET_ACCESS_KEY?: string;
+    AWS_REGION?: string;
+    SMS_SENDER_ID?: string;
+  };
+}
 
 // Create the main app
-const app = new OpenAPIHono();
+const app = new OpenAPIHono<Env>();
 
 // Middleware
 app.use("*", logger());
@@ -38,20 +48,23 @@ app.use(
 const createRateLimiter = () =>
   rateLimiter({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
+    limit: 100,
     message: "Too many requests from this IP, please try again later.",
     standardHeaders: true,
-    legacyHeaders: false,
-  });
+    keyGenerator: (c) =>
+      c.req.header("CF-Connecting-IP") ||
+      c.req.header("X-Forwarded-For") ||
+      "unknown",
+  } as any);
 
 // Apply rate limiting only when the middleware is actually used
 app.use("*", async (c, next) => {
   const limiter = createRateLimiter();
-  return limiter(c, next);
+  return limiter(c as any, next);
 });
 
 // API Key authentication middleware
-const authenticateApiKey = async (c, next) => {
+const authenticateApiKey = async (c: any, next: () => Promise<void>) => {
   const apiKey =
     c.req.header("X-API-Key") ||
     c.req.header("Authorization")?.replace("Bearer ", "");
@@ -176,7 +189,7 @@ const sendRoute = createRoute({
   },
 });
 
-app.openapi(sendRoute, async (c) => {
+app.openapi(sendRoute, (async (c: any) => {
   try {
     const body = await c.req.json();
     const { phoneNumber, code, blockVoip, senderId, messageTemplate, smsType } =
@@ -241,12 +254,12 @@ app.openapi(sendRoute, async (c) => {
       {
         success: false,
         error: "Internal server error",
-        details: error.message,
+        details: error instanceof Error ? error.message : String(error),
       },
       500,
     );
   }
-});
+}) as any);
 
 // Verify SMS code (mock endpoint for demonstration)
 const verifyRoute = createRoute({
@@ -293,7 +306,7 @@ const verifyRoute = createRoute({
   },
 });
 
-app.openapi(verifyRoute, async (c) => {
+app.openapi(verifyRoute, (async (c: any) => {
   try {
     const body = await c.req.json();
     const { phoneNumber, code } = body;
@@ -313,12 +326,12 @@ app.openapi(verifyRoute, async (c) => {
       {
         success: false,
         error: "Internal server error",
-        details: error.message,
+        details: error instanceof Error ? error.message : String(error),
       },
       500,
     );
   }
-});
+}) as any);
 
 // General SMS sending endpoint
 const generalSmsRoute = createRoute({
@@ -361,7 +374,7 @@ const generalSmsRoute = createRoute({
   },
 });
 
-app.openapi(generalSmsRoute, async (c) => {
+app.openapi(generalSmsRoute, (async (c: any) => {
   try {
     const body = await c.req.json();
     const { phoneNumber, message, senderId, smsType } = body;
@@ -419,14 +432,20 @@ app.openapi(generalSmsRoute, async (c) => {
       {
         success: false,
         error: "Internal server error",
-        details: error.message,
+        details: error instanceof Error ? error.message : String(error),
       },
       500,
     );
   }
-});
+}) as any);
 
 // OpenAPI documentation
+app.openAPIRegistry.registerComponent("securitySchemes", "apiKey", {
+  type: "apiKey",
+  name: "X-API-Key",
+  in: "header",
+});
+
 app.doc("/docs", {
   openapi: "3.0.0",
   info: {
@@ -444,15 +463,6 @@ app.doc("/docs", {
       description: "Development server",
     },
   ],
-  components: {
-    securitySchemes: {
-      apiKey: {
-        type: "apiKey",
-        name: "X-API-Key",
-        in: "header",
-      },
-    },
-  },
 });
 
 // Swagger UI
@@ -485,5 +495,9 @@ app.notFound((c) => {
     404,
   );
 });
+
+export { isPhoneNumberVoip } from "./verify-phone";
+
+export const createApp = (_env?: Env["Bindings"]) => app;
 
 export default app;

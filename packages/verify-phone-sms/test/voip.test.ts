@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { createApp } from '../src/verify-phone-server.js';
+import { createApp } from '../src/verify-phone-server';
 
 describe('VoIP Blocking Functionality', () => {
-  let app;
+  let app: ReturnType<typeof createApp>;
 
   beforeEach(() => {
     app = createApp(globalThis.env);
@@ -16,7 +16,7 @@ describe('VoIP Blocking Functionality', () => {
         }
       });
       const res = await app.request(req, globalThis.env);
-      const data = await res.json();
+      const data: any = await res.json();
 
       expect(res.status).toBe(200);
       expect(data.success).toBe(true);
@@ -29,7 +29,7 @@ describe('VoIP Blocking Functionality', () => {
         }
       });
       const res = await app.request(req, globalThis.env);
-      const data = await res.json();
+      const data: any = await res.json();
 
       expect(res.status).toBe(200);
       expect(data.success).toBe(true);
@@ -42,7 +42,7 @@ describe('VoIP Blocking Functionality', () => {
         }
       });
       const res = await app.request(req, globalThis.env);
-      const data = await res.json();
+      const data: any = await res.json();
 
       expect(res.status).toBe(200);
       expect(data.success).toBe(true);
@@ -52,12 +52,13 @@ describe('VoIP Blocking Functionality', () => {
   describe('VoIP detection logic', () => {
     it('should correctly identify VoIP numbers', async () => {
       // Import the function from the module
-      const module = await import('../src/verify-phone-server.js');
+      const module = await import('../src/verify-phone-server');
       const { isPhoneNumberVoip } = module;
-      
+
       // Mock the grab function to return VoIP data
-      const originalGrab = globalThis.grab;
-      globalThis.grab = {
+      const g = globalThis as any;
+      const originalGrab = g.grab;
+      g.grab = {
         instance: () => ({
           "phone-lookup": async () => ({
             carrier: {
@@ -76,7 +77,7 @@ describe('VoIP Blocking Functionality', () => {
       expect(isVoip).toBe(true);
       
       // Mock the grab function to return mobile data
-      globalThis.grab = {
+      g.grab = {
         instance: () => ({
           "phone-lookup": async () => ({
             carrier: {
@@ -95,7 +96,7 @@ describe('VoIP Blocking Functionality', () => {
       expect(isMobile).toBe(false);
       
       // Mock the grab function to return null data
-      globalThis.grab = {
+      g.grab = {
         instance: () => ({
           "phone-lookup": async () => null
         })
@@ -106,7 +107,7 @@ describe('VoIP Blocking Functionality', () => {
       expect(isNull).toBe(false);
       
       // Restore original grab function
-      globalThis.grab = originalGrab;
+      g.grab = originalGrab;
     });
   });
 }); 

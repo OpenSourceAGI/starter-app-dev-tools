@@ -1,0 +1,84 @@
+@plugin "tailwindcss-safe-area";
+@source "../../node_modules/@daveyplate/better-auth-ui";
+
+
+html {
+  scroll-behavior: smooth;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+@layer base {
+	button:not(:disabled),
+		[role="button"]:not(:disabled) {
+		cursor: pointer;
+	}
+}
+
+[role="menuitem"]:not(:disabled) {
+	cursor: pointer;
+}
+
+:root {
+	--warning: hsl(38 92% 50%);
+	--warning-foreground: hsl(48 96% 89%);
+}
+
+.dark {
+	--warning: hsl(48 96% 89%);
+	--warning-foreground: hsl(38 92% 50%);
+}
+
+@theme inline {
+	--color-warning: var(--warning);
+	--color-warning-foreground: var(--warning-foreground);
+}
+
+
+.shadow-light {
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.085);
+}
+
+.shadow-dark {
+  box-shadow: inset 0 0 5px rgba(255, 255, 255, 0.141);
+}
+
+/** iOS Dynamic System Font Scaling */
+/* @supports (-webkit-touch-callout:none) {
+	html {
+		font: -apple-system-body;
+	}
+} */
+
+/* Marquee animations */
+@keyframes marquee {
+  from {
+    transform: translateX(0%);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+@keyframes marquee-vertical {
+  from {
+    transform: translateY(0%);
+  }
+  to {
+    transform: translateY(-100%);
+  }
+}
+@layer utilities {
+  .animate-marquee {
+    animation: marquee var(--duration) linear infinite;
+  }
+  
+  .animate-marquee-vertical {
+    animation: marquee-vertical var(--duration) linear infinite;
+  }
+}

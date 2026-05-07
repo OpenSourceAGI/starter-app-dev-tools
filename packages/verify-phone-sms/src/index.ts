@@ -3,6 +3,6 @@
  * This file is used by Cloudflare Workers and Wrangler.
  */
 
-import app from "./verify-phone-server.js";
+import app from "./verify-phone-server";
 
 export default app; 

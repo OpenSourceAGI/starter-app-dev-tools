@@ -1,5 +1,5 @@
 name = "sms-verification-api"
-main = "src/index.js"
+main = "src/index.ts"
 compatibility_date = "2024-01-01"
 compatibility_flags = ["nodejs_compat"]
 
@@ -7,9 +7,6 @@ compatibility_flags = ["nodejs_compat"]
 [vars]
 AWS_REGION = "us-east-1"
 SMS_SENDER_ID = "Verify"
-
-# Secrets (these should be set via wrangler secret put)
-TRESTLE_API_KEY = "URx3hLxr6o9uSghxffe2S72oMXuM12Ry9zW80Src"
 
 # Staging environment
 [env.staging]

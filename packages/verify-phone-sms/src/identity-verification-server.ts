@@ -54,15 +54,35 @@ const VerificationResponseSchema = z.object({
 });
 
 // TrestleIQ API Functions
+interface AddressInput {
+  street_line_1: string;
+  street_line_2?: string;
+  city: string;
+  state_code: string;
+  postal_code: string;
+  country_code?: string;
+}
+
+interface PhoneHints {
+  name?: string;
+  postalCode?: string;
+}
+
+interface PersonInput {
+  phone_number: string;
+  legal_name: string;
+  current_address: AddressInput;
+}
+
 async function makeRequest(
-  endpoint,
-  params,
-  apiKey,
+  endpoint: string,
+  params: Record<string, string | undefined>,
+  apiKey: string,
   baseUrl = "https://api.trestleiq.com",
-) {
+): Promise<any> {
   const url = new URL(endpoint, baseUrl);
   Object.entries(params).forEach(([key, value]) => {
-    if (value) url.searchParams.set(key, value);
+    if (value) url.searchParams.set(key, value as string);
   });
 
   const response = await fetch(url.toString(), {
@@ -81,7 +101,7 @@ async function makeRequest(
   return response.json();
 }
 
-function reversePhone(phoneNumber, apiKey, hints = {}) {
+function reversePhone(phoneNumber: string, apiKey: string, hints: PhoneHints = {}) {
   return makeRequest(
     "/3.2/phone",
     {
@@ -94,7 +114,7 @@ function reversePhone(phoneNumber, apiKey, hints = {}) {
   );
 }
 
-function findPerson(name, address, apiKey) {
+function findPerson(name: string, address: AddressInput, apiKey: string) {
   return makeRequest(
     "/3.1/person",
     {
@@ -109,7 +129,7 @@ function findPerson(name, address, apiKey) {
   );
 }
 
-function reverseAddress(address, apiKey) {
+function reverseAddress(address: AddressInput, apiKey: string) {
   return makeRequest(
     "/3.1/location",
     {
@@ -125,24 +145,24 @@ function reverseAddress(address, apiKey) {
 }
 
 // Utility Functions
-function normalizeName(name) {
+function normalizeName(name: string): string {
   return name
     .toLowerCase()
     .replace(/[^a-z\s]/g, "")
     .trim();
 }
 
-function extractHistoricalData(phoneResult, personResult, addressResult) {
-  const previousAddresses = [];
-  const previousPhones = [];
-  const associatedNames = [];
+function extractHistoricalData(phoneResult: any, personResult: any, addressResult: any) {
+  const previousAddresses: string[] = [];
+  const previousPhones: string[] = [];
+  const associatedNames: string[] = [];
 
   // Extract from phone result
   if (phoneResult?.owners) {
-    phoneResult.owners.forEach((owner) => {
+    phoneResult.owners.forEach((owner: any) => {
       if (owner.name) associatedNames.push(owner.name);
       if (owner.addresses) {
-        owner.addresses.forEach((addr) => {
+        owner.addresses.forEach((addr: any) => {
           if (addr.street_line_1 && addr.city && addr.state_code) {
             previousAddresses.push(
               `${addr.street_line_1}, ${addr.city}, ${addr.state_code}`,
@@ -151,7 +171,7 @@ function extractHistoricalData(phoneResult, personResult, addressResult) {
         });
       }
       if (owner.phones) {
-        owner.phones.forEach((phone) => {
+        owner.phones.forEach((phone: any) => {
           if (phone.phone_number) previousPhones.push(phone.phone_number);
         });
       }
@@ -160,9 +180,9 @@ function extractHistoricalData(phoneResult, personResult, addressResult) {
 
   // Extract from person result
   if (personResult?.person) {
-    personResult.person.forEach((person) => {
+    personResult.person.forEach((person: any) => {
       if (person.addresses) {
-        person.addresses.forEach((addr) => {
+        person.addresses.forEach((addr: any) => {
           if (addr.street_line_1 && addr.city && addr.state_code) {
             previousAddresses.push(
               `${addr.street_line_1}, ${addr.city}, ${addr.state_code}`,
@@ -171,7 +191,7 @@ function extractHistoricalData(phoneResult, personResult, addressResult) {
         });
       }
       if (person.phones) {
-        person.phones.forEach((phone) => {
+        person.phones.forEach((phone: any) => {
           if (phone.phone_number) previousPhones.push(phone.phone_number);
         });
       }
@@ -180,7 +200,7 @@ function extractHistoricalData(phoneResult, personResult, addressResult) {
 
   // Extract from address result
   if (addressResult?.current_residents) {
-    addressResult.current_residents.forEach((resident) => {
+    addressResult.current_residents.forEach((resident: any) => {
       if (resident.name) associatedNames.push(resident.name);
     });
   }
@@ -192,7 +212,7 @@ function extractHistoricalData(phoneResult, personResult, addressResult) {
   };
 }
 
-function checkNameMatch(personResult, phoneResult, inputName) {
+function checkNameMatch(personResult: any, phoneResult: any, inputName: string): boolean {
   const normalizedInputName = normalizeName(inputName);
 
   // Check person result
@@ -216,10 +236,10 @@ function checkNameMatch(personResult, phoneResult, inputName) {
   return false;
 }
 
-function checkPartialNameMatch(personResult, phoneResult, inputName) {
+function checkPartialNameMatch(personResult: any, phoneResult: any, inputName: string): boolean {
   const inputNameParts = normalizeName(inputName).split(" ");
 
-  const checkNameParts = (name) => {
+  const checkNameParts = (name: string): boolean => {
     const nameParts = normalizeName(name).split(" ");
     return inputNameParts.some(
       (part) => nameParts.includes(part) && part.length > 2,
@@ -248,11 +268,11 @@ function checkPartialNameMatch(personResult, phoneResult, inputName) {
 }
 
 function calculateVerificationScore(
-  phoneResult,
-  personResult,
-  addressResult,
-  input,
-) {
+  phoneResult: any,
+  personResult: any,
+  addressResult: any,
+  input: PersonInput,
+): number {
   let score = 0;
 
   // Phone validation (30 points max)
@@ -292,7 +312,7 @@ function calculateVerificationScore(
   return Math.min(score, 100);
 }
 
-function generateFakeAddresses(count) {
+function generateFakeAddresses(count: number): string[] {
   const fakeAddresses = [
     "123 Fake St, Nowhere, CA",
     "456 Made Up Ave, Fictional, TX",
@@ -303,8 +323,8 @@ function generateFakeAddresses(count) {
   return fakeAddresses.sort(() => Math.random() - 0.5).slice(0, count);
 }
 
-function generateFakePhones(count) {
-  const fakePhones = [];
+function generateFakePhones(count: number): string[] {
+  const fakePhones: string[] = [];
   for (let i = 0; i < count; i++) {
     const areaCode = Math.floor(Math.random() * 900) + 100;
     const exchange = Math.floor(Math.random() * 900) + 100;
@@ -314,8 +334,21 @@ function generateFakePhones(count) {
   return fakePhones;
 }
 
-function generateVerificationQuestions(historicalData, inputName) {
-  const questions = [];
+interface HistoricalData {
+  previous_addresses: string[];
+  previous_phones: string[];
+  associated_names: string[];
+}
+
+interface VerificationQuestion {
+  id: string;
+  question: string;
+  type: "address_history" | "phone_history" | "name_verification";
+  options?: string[];
+}
+
+function generateVerificationQuestions(historicalData: HistoricalData, inputName: string): VerificationQuestion[] {
+  const questions: VerificationQuestion[] = [];
 
   // Address history questions
   if (historicalData.previous_addresses.length > 0) {
@@ -358,7 +391,7 @@ function generateVerificationQuestions(historicalData, inputName) {
   // Name verification questions
   if (historicalData.associated_names.length > 0) {
     const otherNames = historicalData.associated_names.filter(
-      (name) => normalizeName(name) !== normalizeName(inputName),
+      (name: string) => normalizeName(name) !== normalizeName(inputName),
     );
 
     if (otherNames.length > 0) {
@@ -375,12 +408,12 @@ function generateVerificationQuestions(historicalData, inputName) {
 }
 
 function generateRecommendations(
-  score,
-  phoneResult,
-  personResult,
-  addressResult,
-) {
-  const recommendations = [];
+  score: number,
+  phoneResult: any,
+  personResult: any,
+  addressResult: any,
+): string[] {
+  const recommendations: string[] = [];
 
   if (score < 30) {
     recommendations.push(
@@ -420,7 +453,7 @@ function generateRecommendations(
 }
 
 // Main Verification Function
-async function verifyIdentity(input, apiKey) {
+async function verifyIdentity(input: PersonInput, apiKey: string) {
   const { phone_number, legal_name, current_address } = input;
 
   // Run all API calls in parallel
@@ -530,7 +563,7 @@ const verifyIdentityRoute = createRoute({
 
 app.openapi(verifyIdentityRoute, async (c) => {
   try {
-    const body = c.req.valid("json");
+    const body = c.req.valid("json") as PersonInput;
     const apiKey = getApiKey();
     const result = await verifyIdentity(body, apiKey);
 
@@ -627,8 +660,10 @@ app.get("/demo", async (c) => {
 
 export default app;
 
+declare const Bun: { serve: (options: { port: number; fetch: any }) => unknown };
+
 // Start server if not imported as module
-if (import.meta.main) {
+if ((import.meta as any).main) {
   const port = parseInt(process.env.PORT || "3000");
   console.log(`🚀 Server running at http://localhost:${port}`);
   console.log(`📚 API Documentation: http://localhost:${port}/swagger`);

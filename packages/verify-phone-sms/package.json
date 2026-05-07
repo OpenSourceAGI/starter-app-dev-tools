@@ -2,19 +2,20 @@
   "name": "sms-verification-api",
   "version": "0.9.0",
   "description": "SMS Phone Verification API using AWS SNS HTTP API with Hono server on Cloudflare Workers",
-  "main": "src/verify-phone.js",
+  "main": "src/verify-phone.ts",
   "type": "module",
-  "types": "./src/verify-phone.d.ts",
-  "module": "./src/verify-phone.js",
+  "types": "./src/verify-phone.ts",
+  "module": "./src/verify-phone.ts",
   "exports": {
     ".": {
-      "types": "./src/verify-phone.d.ts",
-      "import": "./src/verify-phone.js",
-      "require": "./src/verify-phone.js"
+      "types": "./src/verify-phone.ts",
+      "import": "./src/verify-phone.ts",
+      "require": "./src/verify-phone.ts"
     }
   },
   "scripts": {
     "dev": "wrangler dev",
+    "typecheck": "tsc --noEmit",
     "ship": "bun run standard-version --release-as patch; bun publish",
     "deploy": "wrangler deploy",
     "deploy:staging": "wrangler deploy --env staging",
@@ -56,12 +57,15 @@
     "libphonenumber-js": "^1.12.13"
   },
   "devDependencies": {
-    "wrangler": "^4.24.0",
+    "@cloudflare/workers-types": "^4.20260507.1",
+    "@types/node": "^25.6.0",
+    "@vitest/ui": "^1.0.0",
     "eslint": "^8.55.0",
     "prettier": "^3.1.0",
+    "supertest": "^6.3.3",
+    "typescript": "^6.0.3",
     "vitest": "^1.0.0",
-    "@vitest/ui": "^1.0.0",
-    "supertest": "^6.3.3"
+    "wrangler": "^4.24.0"
   },
   "repository": {
     "type": "git",

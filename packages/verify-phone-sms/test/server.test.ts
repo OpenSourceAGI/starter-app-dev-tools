@@ -21,7 +21,7 @@ describe('SMS Verification API Server', () => {
   describe('Health Check Endpoints', () => {
     it('should return API info on root endpoint', async () => {
       const res = await server.request('/');
-      const data = await res.json();
+      const data: any = await res.json();
       
       expect(res.status).toBe(200);
       expect(data.success).toBe(true);
@@ -31,7 +31,7 @@ describe('SMS Verification API Server', () => {
 
     it('should return health status', async () => {
       const res = await server.request('/health');
-      const data = await res.json();
+      const data: any = await res.json();
       
       expect(res.status).toBe(200);
       expect(data.success).toBe(true);
@@ -82,7 +82,7 @@ describe('SMS Verification API Server', () => {
   describe('Error Handling', () => {
     it('should return 404 for non-existent endpoints', async () => {
       const res = await server.request('/nonexistent');
-      const data = await res.json();
+      const data: any = await res.json();
       
       expect(res.status).toBe(404);
       expect(data.success).toBe(false);

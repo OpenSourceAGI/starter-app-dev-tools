@@ -1,4 +1,4 @@
-import { parsePhoneNumber, isValidPhoneNumber as isValidPhoneNumberLib, getNumberType } from 'libphonenumber-js';
+import { parsePhoneNumber, getNumberType } from 'libphonenumber-js';
 
 interface VerifyPhoneOptions {
     /**
@@ -71,13 +71,26 @@ interface VerifyPhoneOptions {
  * @param {string} [options.messageTemplate] - Custom message template. Use {code} as placeholder for the code.
  * @returns {Promise<Object>} Response object with success status, message, messageId, and code
  */
-export default async function verifyPhone(options = {} as VerifyPhoneOptions) {
+export interface VerifyPhoneResult {
+    success: boolean;
+    message?: string;
+    messageId?: string;
+    code?: string;
+    phoneNumber?: string;
+    expiresIn?: number;
+    error?: string;
+    details?: string;
+    isVoip?: boolean;
+}
+
+export default async function verifyPhone(options: VerifyPhoneOptions = {} as VerifyPhoneOptions): Promise<VerifyPhoneResult> {
+    const env = (typeof process !== 'undefined' ? process.env : undefined) as Record<string, string | undefined> | undefined;
     var {
-        phoneNumber, 
+        phoneNumber,
         code,
-        accessKeyId = process?.env?.AWS_ACCESS_KEY_ID,
-        secretAccessKey = process?.env?.AWS_SECRET_ACCESS_KEY,
-        awsRegion = process?.env?.AWS_REGION,
+        accessKeyId = env?.AWS_ACCESS_KEY_ID,
+        secretAccessKey = env?.AWS_SECRET_ACCESS_KEY,
+        awsRegion = env?.AWS_REGION,
         blockVoip = false,
         voipDetectionMethod = 'api',
         useLibPhoneNumber = false,
@@ -154,10 +167,11 @@ export default async function verifyPhone(options = {} as VerifyPhoneOptions) {
         };
 
     } catch (error) {
+        const err = error as Error;
         return {
             success: false,
-            error: error.message,
-            details: error.stack || undefined
+            error: err?.message ?? String(error),
+            details: err?.stack || undefined
         };
     }
 }
@@ -167,7 +181,7 @@ export default async function verifyPhone(options = {} as VerifyPhoneOptions) {
  * @param {string} phone - The input phone number
  * @returns {string} - The formatted E.164 phone number
  */
-function formatPhoneNumberLibPhoneNumber(phone) {
+function formatPhoneNumberLibPhoneNumber(phone: string): string {
     try {
         const phoneNumber = parsePhoneNumber(phone);
         if (phoneNumber && phoneNumber.isValid()) {
@@ -186,7 +200,7 @@ function formatPhoneNumberLibPhoneNumber(phone) {
  * @param {string} phone - The input phone number
  * @returns {string} - The formatted E.164 phone number
  */
-function formatPhoneNumber(phone) {
+function formatPhoneNumber(phone: string): string {
     const cleaned = phone.replace(/\D/g, '');
 
     if (cleaned.length === 10) {
@@ -204,7 +218,7 @@ function formatPhoneNumber(phone) {
  * @param {boolean} useLibPhoneNumber - Whether to use libphonenumber-js for validation
  * @returns {boolean} - True if valid, false otherwise
  */
-function isValidPhoneNumber(phone, useLibPhoneNumber = false) {
+function isValidPhoneNumber(phone: string, useLibPhoneNumber = false): boolean {
     if (useLibPhoneNumber) {
         try {
             const phoneNumber = parsePhoneNumber(phone);
@@ -224,25 +238,36 @@ function isValidPhoneNumber(phone, useLibPhoneNumber = false) {
 * Works directly in the browser using Web Crypto API
 */
 
+interface InternalSNSClientOptions {
+    accessKeyId?: string;
+    secretAccessKey?: string;
+    awsRegion?: string;
+}
+
 class SNSClient {
-    constructor(options = {}) {
+    accessKeyId?: string;
+    secretAccessKey?: string;
+    region: string;
+    endpoint: string;
+
+    constructor(options: InternalSNSClientOptions = {}) {
         this.accessKeyId = options.accessKeyId;
         this.secretAccessKey = options.secretAccessKey;
         this.region = options.awsRegion || 'us-east-1';
         this.endpoint = `https://sns.${this.region}.amazonaws.com`;
     }
 
-    stringToUint8Array(str) {
+    stringToUint8Array(str: string): Uint8Array {
         return new TextEncoder().encode(str);
     }
 
-    arrayBufferToHex(buffer) {
-        return Array.from(new Uint8Array(buffer))
+    arrayBufferToHex(buffer: ArrayBuffer | Uint8Array): string {
+        return Array.from(new Uint8Array(buffer as ArrayBuffer))
             .map(b => b.toString(16).padStart(2, '0'))
             .join('');
     }
 
-    async sign(method, url, headers, payload) {
+    async sign(method: string, url: string, headers: Record<string, string>, payload: string): Promise<Record<string, string>> {
         const now = new Date();
         const amzDate = now.toISOString().replace(/[:\-]|\.\d{3}/g, '');
         const dateStamp = amzDate.slice(0, 8);
@@ -334,7 +359,7 @@ class SNSClient {
         return headers;
     }
 
-    async makeRequest(action, params = {}) {
+    async makeRequest(action: string, params: Record<string, string> = {}): Promise<{ MessageId?: string; raw?: string }> {
         const queryParams = new URLSearchParams({
             Action: action,
             Version: '2010-03-31',
@@ -363,11 +388,12 @@ class SNSClient {
 
             return this.parseXMLResponse(text);
         } catch (error) {
-            throw new Error(`SNS Request failed: ${error.message}`);
+            const message = error instanceof Error ? error.message : String(error);
+            throw new Error(`SNS Request failed: ${message}`);
         }
     }
 
-    parseXMLResponse(xmlText) {
+    parseXMLResponse(xmlText: string): { MessageId?: string; raw?: string } {
         const messageIdMatch = xmlText.match(/<MessageId>([^<]+)<\/MessageId>/);
         const errorCodeMatch = xmlText.match(/<Code>([^<]+)<\/Code>/);
         const errorMessageMatch = xmlText.match(/<Message>([^<]+)<\/Message>/);
@@ -391,7 +417,7 @@ class SNSClient {
  * @param {string} phone - The phone number in E.164 format (e.g., +1234567890).
  * @returns {Promise<boolean>} True if phone is Bandwidth-only VoIP
  */
-async function isPhoneNumberVoip(phone) {
+export async function isPhoneNumberVoip(phone: string): Promise<boolean> {
     try {
         const response = await fetch(`https://www.sent.dm/api/phone-lookup?phone=${encodeURIComponent(phone)}`, {
             headers: {
@@ -404,7 +430,7 @@ async function isPhoneNumberVoip(phone) {
             return false; // Default to allowing the number if lookup fails
         }
 
-        const phoneData = await response.json();
+        const phoneData = await response.json() as any;
 
         if (!phoneData || !phoneData.carrier) return false;
 
@@ -428,7 +454,7 @@ async function isPhoneNumberVoip(phone) {
  * @param {string} metadataType - Metadata type: 'minimal' (75KB) or 'full' (140KB)
  * @returns {Promise<boolean>} True if phone is likely VoIP
  */
-async function isPhoneNumberVoipLibPhoneNumber(phone, metadataType = 'minimal') {
+async function isPhoneNumberVoipLibPhoneNumber(phone: string, metadataType: 'minimal' | 'full' = 'minimal'): Promise<boolean> {
     try {
         // Parse the phone number using libphonenumber-js
         const phoneNumber = parsePhoneNumber(phone);

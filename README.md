@@ -7,35 +7,32 @@
     <a href="https://v0.app/templates/dashboard-landing-auth-billing-teams-docs-themes-ExDfusFzX6P"> 🎨 v0 Template </a>
 </h3>
 <p align="center">
-    <a href="https://discord.gg/SJdBqBz3tV">
+     <a href="https://github.com/OpenSourceAGI/appdemo-dev-tools/discussions">
+     <img alt="GitHub Stars" src="https://img.shields.io/github/stars/OpenSourceAGI/appdemo-dev-tools" /></a>
+     <a href="https://discord.gg/SJdBqBz3tV">
         <img src="https://img.shields.io/discord/1110227955554209923.svg?label=Chat&logo=Discord&colorB=7289da&style=flat"
             alt="Join Discord" />
     </a>
-     <a href="https://github.com/OpenSourceAGI/appdemo-dev-tools/discussions">
-     <img alt="GitHub Stars" src="https://img.shields.io/github/stars/OpenSourceAGI/appdemo-dev-tools" /></a>
     <a href="https://github.com/OpenSourceAGI/appdemo-dev-tools/discussions">
     <img alt="GitHub Discussions"
         src="https://img.shields.io/github/discussions/OpenSourceAGI/appdemo-dev-tools" />
+    </a>
+    <a href="https://codespaces.new/OpenSourceAGI/appdemo-dev-tools">
+    <img src="https://github.com/codespaces/badge.svg" width="150" height="20" alt="GitHub Codespaces" />
     </a>
 <br />
     <a href="https://github.com/OpenSourceAGI/appdemo-dev-tools/pulse" alt="Activity">
         <img src="https://img.shields.io/github/commit-activity/m/OpenSourceAGI/appdemo-dev-tools" />
     </a>
     <img src="https://img.shields.io/github/last-commit/OpenSourceAGI/appdemo-dev-tools.svg" alt="GitHub last commit" />
-<br />
-    <img src="https://img.shields.io/badge/Next.js-16-black" alt="Next.js" />
     <a href="https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request">
-        <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg"
-            alt="PRs Welcome" />
+        <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome" />
     </a>
-    <a href="https://codespaces.new/OpenSourceAGI/appdemo-dev-tools">
-    <img src="https://github.com/codespaces/badge.svg" width="150" height="20" />
-    </a>
+    <br />
+    <img src="https://img.shields.io/badge/Claude-D97757?logo=claude&logoColor=fff" alt="Claude AI"> <img src="https://img.shields.io/badge/Cloudflare-F38020?logo=Cloudflare&logoColor=white" alt="Cloudflare"> <img src="https://img.shields.io/badge/shadcn%2Fui-000?logo=shadcnui&logoColor=fff" alt="shadcn/ui"> <img src="https://img.shields.io/badge/Next.js-black" alt="Next.js" /> 
 </p>
 
 ### 📦 Packages & Apps
-
-### Apps
 
 **[docs](apps/docs/)** - Documentation site built with Next.js featuring AI chat, full-text search, and auto-generated API reference from TypeScript types and OpenAPI specs. Serves as the central hub for all starter template documentation.
 `bun dev` · `npm run dev`
@@ -45,25 +42,6 @@
 
 **[vscode-cloud](apps/vscode-cloud/)** - Per-user VS Code (code-server) instances on Cloudflare Containers. Each user gets a fully isolated environment: Cloudflare Access handles SSO, a Durable Object stores the per-user password in SQLite, and a Worker routes traffic to the right container.
 `bun deploy` · `wrangler deploy`
-
-### Starter Templates
-
-**[template-svelte-betterauth-drizzle-shadcn](starter-templates/template-svelte-betterauth-drizzle-shadcn/)** - Full-stack SvelteKit app with Better Auth, Drizzle ORM on Cloudflare D1, Stripe payments, and shadcn-svelte components.
-`bun create starter-app` · `npx create-starter-app`
-
-**[template-nextjs-betterauth-shadcn-drizzle](starter-templates/template-nextjs-betterauth-shadcn-drizzle/)** - Next.js SaaS boilerplate with PostgreSQL, Better Auth, Stripe subscriptions, and shadcn/ui components.
-`bun create starter-app` · `npx create-starter-app`
-
-**[template-nextjs-betterauth-shadcn-prisma](starter-templates/template-nextjs-betterauth-shadcn-prisma/)** - Lightweight Next.js starter with Prisma ORM, Better Auth, Google OAuth, credential login, and protected routes.
-`bun create starter-app` · `npx create-starter-app`
-
-**[template-fumadocs](starter-templates/template-fumadocs/)** - Documentation site with Fumadocs, Orama search, OpenAPI/Swagger docs, MDX support, and collapsible sidebar.
-`bun create starter-app` · `npx create-starter-app`
-
-**[template-docusaurus](starter-templates/template-docusaurus/)** - Docusaurus 3 docs template with offline Lunr search, OpenAPI plugin, and classic theme optimized for technical docs.
-`bun create starter-app` · `npx create-starter-app`
-
-### Utility Packages
 
 **[about-system-info](packages/about-system-info/)** - Cross-platform CLI that prints CPU, memory, disk, uptime, public IP, ISP, and installed tools as a compact emoji line. Add to your shell config (`config.fish`, `.zshrc`) for an instant system snapshot on every terminal launch. Supports Windows, macOS, and Linux.
 `npx about-system` · `npm install -g about-system`
@@ -106,3 +84,22 @@
 
 **[web2mobile-wrapper](packages/web2mobile-wrapper/)** - Transform any website URL into a native mobile app wrapper for iOS and Android. No coding required — generates a React Native project pre-configured with your URL, push notifications, and app store metadata. Boosts discoverability via App Store and Google Play presence.
 `npx create-mobile-wrapper` · `npm install -g create-mobile-wrapper`
+
+
+
+### Starter Templates
+
+**[template-svelte-betterauth-drizzle-shadcn](starter-templates/template-svelte-betterauth-drizzle-shadcn/)** - Full-stack SvelteKit app with Better Auth, Drizzle ORM on Cloudflare D1, Stripe payments, and shadcn-svelte components.
+`bun create starter-app` · `npx create-starter-app`
+
+**[template-nextjs-betterauth-shadcn-drizzle](starter-templates/template-nextjs-betterauth-shadcn-drizzle/)** - Next.js SaaS boilerplate with PostgreSQL, Better Auth, Stripe subscriptions, and shadcn/ui components.
+`bun create starter-app` · `npx create-starter-app`
+
+**[template-nextjs-betterauth-shadcn-prisma](starter-templates/template-nextjs-betterauth-shadcn-prisma/)** - Lightweight Next.js starter with Prisma ORM, Better Auth, Google OAuth, credential login, and protected routes.
+`bun create starter-app` · `npx create-starter-app`
+
+**[template-fumadocs](starter-templates/template-fumadocs/)** - Documentation site with Fumadocs, Orama search, OpenAPI/Swagger docs, MDX support, and collapsible sidebar.
+`bun create starter-app` · `npx create-starter-app`
+
+**[template-docusaurus](starter-templates/template-docusaurus/)** - Docusaurus 3 docs template with offline Lunr search, OpenAPI plugin, and classic theme optimized for technical docs.
+`bun create starter-app` · `npx create-starter-app`

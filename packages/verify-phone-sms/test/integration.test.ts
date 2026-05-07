@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { createApp } from '../src/verify-phone-server.js';
+import { createApp } from '../src/verify-phone-server';
 
 describe('SMS Verification API Integration Tests', () => {
-  let app;
+  let app: ReturnType<typeof createApp>;
 
   beforeEach(() => {
     app = createApp(globalThis.env);
@@ -19,7 +19,7 @@ describe('SMS Verification API Integration Tests', () => {
         }
       });
       const res1 = await app.request(req1, globalThis.env);
-      const data1 = await res1.json();
+      const data1: any = await res1.json();
 
       expect(res1.status).toBe(200);
       expect(data1.success).toBe(true);
@@ -31,7 +31,7 @@ describe('SMS Verification API Integration Tests', () => {
         }
       });
       const res2 = await app.request(req2, globalThis.env);
-      const data2 = await res2.json();
+      const data2: any = await res2.json();
 
       expect(res2.status).toBe(200);
       expect(data2.success).toBe(true);
@@ -42,7 +42,7 @@ describe('SMS Verification API Integration Tests', () => {
 
       const req = new Request(`http://localhost/api/send-verification?phoneNumber=${encodeURIComponent(phoneNumber)}`);
       const res = await app.request(req, globalThis.env);
-      const data = await res.json();
+      const data: any = await res.json();
 
       expect(res.status).toBe(401);
       expect(data.error).toBe('API key required');
@@ -57,7 +57,7 @@ describe('SMS Verification API Integration Tests', () => {
         }
       });
       const res = await app.request(req, globalThis.env);
-      const data = await res.json();
+      const data: any = await res.json();
 
       expect(res.status).toBe(401);
       expect(data.error).toBe('Invalid API key');
@@ -81,7 +81,7 @@ describe('SMS Verification API Integration Tests', () => {
           }
         });
         const res = await app.request(req, globalThis.env);
-        const data = await res.json();
+        const data: any = await res.json();
 
         expect(res.status).toBe(200);
         expect(data.success).toBe(true);
@@ -104,7 +104,7 @@ describe('SMS Verification API Integration Tests', () => {
           }
         });
         const res = await app.request(req, globalThis.env);
-        const data = await res.json();
+        const data: any = await res.json();
 
         expect(res.status).toBe(400);
         expect(data.error).toBe('Invalid phone number format');
@@ -122,7 +122,7 @@ describe('SMS Verification API Integration Tests', () => {
         }
       });
       const res = await app.request(req, globalThis.env);
-      const data = await res.json();
+      const data: any = await res.json();
 
       expect(res.status).toBe(200);
       expect(data).toMatchObject({
@@ -143,7 +143,7 @@ describe('SMS Verification API Integration Tests', () => {
         }
       });
       const res = await app.request(req, globalThis.env);
-      const data = await res.json();
+      const data: any = await res.json();
 
       expect(res.status).toBe(400); // Will fail because no code was sent, but endpoint works
       expect(data.error).toBeDefined();
