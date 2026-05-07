@@ -1,7 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(node -e \"const p=require\\('/mnt/data/Projects/appdemo-dev-tools/packages/react-download-app-buttons/package.json'\\); console.log\\(p.name, p.version, p.private\\)\")"
-    ]
-  }
-}
