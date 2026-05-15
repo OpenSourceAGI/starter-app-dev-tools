@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  transpilePackages: ['shadcn-theme-menu'],
   typescript: {
     ignoreBuildErrors: true,
   },

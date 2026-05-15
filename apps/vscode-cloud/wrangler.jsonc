@@ -13,7 +13,7 @@
       // standard-1 = 1 vCPU / 2 GB RAM — minimum for code-server
       // upgrade to standard-2 (2 vCPU / 4 GB) for heavier workloads
       "instance_type": "standard-1",
-      // Max simultaneously running containers across all users
+      // Max simultaneously running containers across all users (~$0.30/hr each)
       "max_instances": 50,
     },
   ],
@@ -36,21 +36,45 @@
     },
   ],
 
+  // ── KV namespace — Google OAuth sessions ─────────────────────────────────
+  // Only needed when using Google OAuth (option B auth).
+  // Create with: wrangler kv namespace create SESSION_STORE
+  // Then paste the returned id below.
+  "kv_namespaces": [
+    {
+      "binding": "SESSION_STORE",
+      "id": "",  // paste your KV namespace ID here after running the command above
+    },
+  ],
+
   // ── Environment variables ──────────────────────────────────────────────────
   "vars": {
-    // How long to keep an idle container alive before hibernating
+    // How long to keep an idle container alive before hibernating.
+    // Supports: "30s", "5m", "1h". Max ~24h. keepAlive: true disables sleep entirely.
     "SLEEP_AFTER": "30m",
 
-    // Set these to enable Cloudflare Access JWT validation.
-    // Leave empty / omit for local dev (auth falls back to x-user-id header).
-    //
-    // TEAM_DOMAIN:  https://<your-team-name>.cloudflareaccess.com
-    // POLICY_AUD:   Find in CF One → Access controls → Applications → your app → AUD tag
+    // ── Auth option A: Cloudflare Access JWT ─────────────────────────────────
+    // Set these to validate CF Access JWTs. Leave blank to use option B or dev mode.
+    //   TEAM_DOMAIN:  https://<your-team-name>.cloudflareaccess.com
+    //   POLICY_AUD:   CF One → Access → Applications → your app → AUD tag
     "TEAM_DOMAIN": "",
     "POLICY_AUD": "",
 
-    // R2 bucket name passed through to the container entrypoint
+    // ── Auth option B: Google OAuth ───────────────────────────────────────────
+    // Set GOOGLE_CLIENT_ID here; set GOOGLE_CLIENT_SECRET as a wrangler secret.
+    // Create OAuth credentials at console.cloud.google.com → APIs → Credentials.
+    // Add redirect URI: https://<your-worker>.workers.dev/auth/callback
+    //   wrangler secret put GOOGLE_CLIENT_SECRET
+    "GOOGLE_CLIENT_ID": "",
+
+    // ── R2 bucket name ────────────────────────────────────────────────────────
     "R2_BUCKET_NAME": "vscode-cloud-workspaces",
+
+    // ── GitHub repo auto-cloning ──────────────────────────────────────────────
+    // Comma-separated "owner/repo" pairs cloned into /workspace on container start.
+    // Example: "myorg/frontend,myorg/api"
+    // Private repos require GITHUB_TOKEN secret (set via: wrangler secret put GITHUB_TOKEN)
+    "GITHUB_REPOS": "",
   },
 
   // ── R2 bucket binding ─────────────────────────────────────────────────────
@@ -63,16 +87,20 @@
   ],
 
   // ── Secrets (set via CLI, never committed) ────────────────────────────────
-  // After creating the R2 bucket and generating an API token with R2 read/write,
-  // set these secrets so the container can mount the bucket via geesefs (FUSE):
-  //
+  // R2 credentials for FUSE mount (geesefs inside the container):
   //   wrangler secret put R2_ACCESS_KEY_ID
   //   wrangler secret put R2_SECRET_ACCESS_KEY
   //   wrangler secret put R2_ACCOUNT_ID
   //
-  // Bucket name is passed as R2_BUCKET_NAME env var (see vars below).
-  // To set up:
+  // Google OAuth (if using auth option B):
+  //   wrangler secret put GOOGLE_CLIENT_SECRET
+  //
+  // GitHub (if cloning private repos via GITHUB_REPOS):
+  //   wrangler secret put GITHUB_TOKEN
+  //
+  // Initial setup:
   //   wrangler login
   //   wrangler r2 bucket create vscode-cloud-workspaces
+  //   wrangler kv namespace create SESSION_STORE   # only if using Google OAuth
   //   wrangler deploy
 }

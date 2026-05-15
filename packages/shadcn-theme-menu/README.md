@@ -1,5 +1,5 @@
 <p align="center">
-    <img width="350px" src="https://i.imgur.com/7yMcnSI.png" />
+    <img width="350px" src="https://i.imgur.com/mgErPzk.png" />
 <p align="center">
     <a href="https://discord.gg/SJdBqBz3tV">
         <img src="https://img.shields.io/discord/1110227955554209923.svg?label=Chat&logo=Discord&colorB=7289da&style=flat"
@@ -75,6 +75,7 @@ Simple light/dark mode toggle.
 ```
 
 **Props:**
+
 - `mode?` - Include system option (default: `'light-dark-system'`)
 - `Button?` - Custom Button component
 - `DropdownMenu?` - Custom DropdownMenu components
@@ -93,6 +94,7 @@ Full dropdown with 24+ color themes and live preview.
 ```
 
 **Props:**
+
 - `iconSrc?` - Custom icon path (default: Palette icon)
 - `Button?` - Custom Button component
 - `DropdownMenu?` - Custom DropdownMenu components
@@ -116,8 +118,8 @@ Animated toggle with particle effects.
 Pass your own Button or DropdownMenu components:
 
 ```tsx
-import { Button } from '@/components/ui/button';
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { Button } from "@/components/ui/button";
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 
 <ThemeDropdown
   Button={Button}
@@ -127,27 +129,29 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
     Content: DropdownMenu.Content,
     Item: DropdownMenu.Item,
     Label: DropdownMenu.Label,
-    Separator: DropdownMenu.Separator
+    Separator: DropdownMenu.Separator,
   }}
-/>
+/>;
 ```
 
 ## Programmatic Usage
 
 ```tsx
-import { themeNames, themeColors, formatThemeName } from 'shadcn-theme-menu';
+import { themeNames, themeColors, formatThemeName } from "shadcn-theme-menu";
 
 // Set theme programmatically
 const setTheme = (themeName: string) => {
-  localStorage.setItem('color-theme', themeName);
-  themeNames.forEach(t => document.documentElement.classList.remove(`theme-${t}`));
+  localStorage.setItem("color-theme", themeName);
+  themeNames.forEach((t) =>
+    document.documentElement.classList.remove(`theme-${t}`),
+  );
   document.documentElement.classList.add(`theme-${themeName}`);
 };
 
 // Get theme info
 console.log(themeNames); // Array of all theme names
-console.log(themeColors['cyberpunk']); // { primary: '#ff00c8', secondary: '#f0f0ff' }
-console.log(formatThemeName('modern-minimal')); // 'Modern Minimal'
+console.log(themeColors["cyberpunk"]); // { primary: '#ff00c8', secondary: '#f0f0ff' }
+console.log(formatThemeName("modern-minimal")); // 'Modern Minimal'
 ```
 
 ## TypeScript
@@ -155,7 +159,7 @@ console.log(formatThemeName('modern-minimal')); // 'Modern Minimal'
 Full TypeScript support with exported types:
 
 ```tsx
-import type { ThemeProviderProps } from 'shadcn-theme-menu';
+import type { ThemeProviderProps } from "shadcn-theme-menu";
 ```
 
 ## Demo
@@ -167,6 +171,7 @@ pnpm demo
 ```
 
 Or manually:
+
 ```bash
 cd demo
 pnpm install

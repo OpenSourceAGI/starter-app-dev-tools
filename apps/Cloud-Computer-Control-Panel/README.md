@@ -1,8 +1,10 @@
-# CCCP - Cloud Computer Control Panel
+![code2cloud](https://i.imgur.com/t6WlnCI.png)
 
-![CCCP Banner](https://i.imgur.com/gnjJNSJ.png)
+# Cloud Computer Control Panel
 
 An open-source cloud infrastructure management platform with automated [Dokploy](https://dokploy.com/) deployment for seamless container orchestration on AWS EC2.
+
+TODO: add https://github.com/Dokploy/mcp
 
 ## Overview
 
@@ -59,12 +61,14 @@ Follow these guides to create programmatic access credentials:
 ### Installation
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/yourusername/aws-manager.git
 cd aws-manager
 ```
 
 2. Install dependencies:
+
 ```bash
 npm install
 # or
@@ -74,6 +78,7 @@ pnpm install
 ```
 
 3. Run the development server:
+
 ```bash
 npm run dev
 # or
@@ -120,11 +125,14 @@ From the "Managers" tab:
 - **Add Software**: Install additional tools post-creation
 - **Access Dokploy**: One-click access to Dokploy dashboard (port 3000)
 
+![CCCP Banner](https://i.imgur.com/gnjJNSJ.png)
+
 ### API Reference
 
 Access the interactive API documentation at `/api-reference` or click the "API Docs" button in the dashboard.
 
 Available endpoints:
+
 - `GET /api/instances` - List all instances in a region
 - `GET /api/instances/all-regions` - List instances across all regions
 - `POST /api/instances/install-software` - Install software on an instance

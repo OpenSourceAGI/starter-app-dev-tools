@@ -1,8 +1,8 @@
-# Debate AI Public Source License (PSL)
+# AppDemo.site Public Source License (PSL)
 
 Version 1.0
 
-Copyright © 2024-2026 Debate AI. All rights reserved.
+Copyright © 2024-2026 AppDemo.site (github.com/vtempest). All rights reserved.
 
 ## 1. Acceptance
 
@@ -10,7 +10,7 @@ By accessing, using, modifying, or distributing the Software, you agree to the t
 
 ## 2. License Grant
 
-Debate AI ("Licensor") grants you a non-exclusive, royalty-free, worldwide, non-transferable, non-sublicensable license to:
+AppDemo.site ("Licensor") grants you a non-exclusive, royalty-free, worldwide, non-transferable, non-sublicensable license to:
 
 - Use and copy the Software
 - Modify the source code for permitted purposes
@@ -50,7 +50,7 @@ You may redistribute the Software or derivative works free of charge, for non-co
 
 ## 4. Prohibited Uses
 
-Unless you hold a separate commercial agreement from Debate AI, you may not:
+Unless you hold a separate commercial agreement from AppDemo.site , you may not:
 
 **4.1** Offer network-accessible access to the Software (SaaS, managed services, hosted/shared instances, API access, multiplayer or centralized deployments for external users, etc.)
 
@@ -58,7 +58,7 @@ Unless you hold a separate commercial agreement from Debate AI, you may not:
 
 **4.3** Commercialize, sell, sublicense, or bundle the Software into any paid product, service, offering, or distribution
 
-**4.4** Use the Software to develop a competing product or commercial alternative to Debate AI services or Software
+**4.4** Use the Software to develop a competing product or commercial alternative to AppDemo.site services or Software
 
 **4.5** Embed the Software inside any distributed extension, integration, or client project in a way that provides end-user access without direct issuance of this License
 
@@ -67,7 +67,7 @@ Unless you hold a separate commercial agreement from Debate AI, you may not:
 You must:
 
 - Preserve all copyright, trademark, and proprietary notices
-- Add a visible notice if you modify the Software: "This Software has been modified from the original version distributed by Debate AI"
+- Add a visible notice if you modify the Software: "This Software has been modified from the original version distributed by AppDemo.site "
 - Provide this same License to any party receiving the Software from you
 
 You may not:
@@ -101,7 +101,7 @@ Bundled third-party dependencies retain their original licenses.
 
 ## 11. Definitions
 
-- **"Licensor"** — Debate AI
+- **"Licensor"** — AppDemo.site
 - **"Software"** — The software made available under these terms, including all source code, documentation, and associated files.
 - **"You"** — The individual or entity exercising rights under this License.
 - **"Your Organization"** — Any legal entity you work for, including parent companies, subsidiaries, and affiliates under common control.
@@ -110,4 +110,4 @@ Bundled third-party dependencies retain their original licenses.
 
 ## 12. Commercial Licensing
 
-Commercial licensing is available through direct agreement with Debate AI via support@debate-ai.com
+Commercial licensing is available through direct agreement with AppDemo.site via support@debate-ai.com

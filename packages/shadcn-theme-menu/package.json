@@ -9,20 +9,22 @@
     "url": "https://github.com/OpenSourceAGI/appdemo-dev-tools/tree/master/packages/shadcn-theme-menu"
   },
   "homepage": "https://github.com/OpenSourceAGI/appdemo-dev-tools/tree/master/packages/shadcn-theme-menu",
-  "main": "./src/index.ts",
+  "main": "./dist/index.js",
   "types": "./src/index.ts",
   "exports": {
     ".": {
       "types": "./src/index.ts",
-      "default": "./src/index.ts"
+      "import": "./dist/index.js"
     },
     "./themes.css": "./src/themes-shadcn.css"
   },
   "files": [
-    "src"
+    "src",
+    "dist"
   ],
   "scripts": {
-    "ship": "npx standard-version --release-as patch; rm CHANGELOG.md; npm publish",
+    "build": "vite build",
+    "ship": "npm run build; npx standard-version --release-as patch; rm CHANGELOG.md; npm publish",
     "demo": "cd demo && pnpm dev"
   },
   "sideEffects": [
