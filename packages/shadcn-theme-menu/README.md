@@ -31,6 +31,17 @@
 
 Beautiful theme components for shadcn/ui with 24+ color themes, dark/light mode, and animations.
 
+## Features
+
+- **24+ pre-made themes** – from minimal and elegant to cyberpunk and app-inspired designs
+- **OKLCH colors** – modern color space for perceptually uniform colors and better accessibility
+- **Drop-in components** – `ThemeToggle`, `ThemeDropdown`, and `CinematicThemeSwitcher` with particle effects
+- **Fully type-safe** – complete TypeScript support with exported types
+- **Customizable** – pass your own Button/DropdownMenu components or set themes programmatically
+- **Persistent** – automatic `localStorage` support for color theme preferences
+
+---
+
 ## Installation
 
 ```bash

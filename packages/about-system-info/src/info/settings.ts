@@ -12,7 +12,7 @@ import process from "process";
 export const SETTINGS_FILE = path.join(
   os.homedir(),
   ".config",
-  "systeminfo-settings.json"
+  "systeminfo-settings.json",
 );
 export const CACHE_FILE = path.join(os.tmpdir(), "systeminfo-cache.json");
 
@@ -45,7 +45,7 @@ export const DEFAULT_SETTINGS = {
       "load_average",
     ],
     ["ip", "iplocal", "city", "domain", "isp"],
-    ["shell", "pacman", "services_running", "containers"],
+    ["shell", "services_running", "pacman", "containers"],
   ],
   colors: {
     user: "red",

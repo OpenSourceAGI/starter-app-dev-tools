@@ -1,8 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { useRouter } from "next/navigation"
-import { useSession, signOut } from "next-auth/react"
 import {
   ChevronUp,
   User2,
@@ -15,7 +13,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
+} from "./components/ui/sidebar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,8 +24,8 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
   DropdownMenuPortal,
-} from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+} from "./components/ui/dropdown-menu"
+import { Avatar, AvatarFallback, AvatarImage } from "./components/ui/avatar"
 import CinematicThemeSwitcher from "./cinematic-theme-switcher"
 import { themeNames, themeColors, formatThemeName } from "./theme-dropdown"
 
@@ -39,11 +37,14 @@ function SettingsDialog({ trigger }: SettingsDialogProps) {
   return <>{trigger}</>;
 }
 
-export function SidebarUserMenu() {
-  const router = useRouter()
-  const { data: session } = useSession()
-  const user = session?.user || { name: "Guest User", email: "guest@example.com", image: null }
-  const [colorTheme, setColorTheme] = React.useState("modern-minimal")
+interface SidebarUserMenuProps {
+  user?: { name?: string | null; email?: string | null; image?: string | null }
+  onSignOut?: () => void | Promise<void>
+}
+
+export function SidebarUserMenu({ user: userProp, onSignOut }: SidebarUserMenuProps = {}) {
+  const user = userProp || { name: "Guest User", email: "guest@example.com", image: null }
+  const [colorTheme, setColorTheme] = React.useState("minimal")
   const [mounted, setMounted] = React.useState(false)
   const [previewTheme, setPreviewTheme] = React.useState<string | null>(null)
 
@@ -188,8 +189,7 @@ export function SidebarUserMenu() {
             </DropdownMenuSub>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={async () => {
-              await signOut()
-              router.push("/")
+              await onSignOut?.()
             }}>
               <LogOut className="mr-2 h-4 w-4" />
               Sign out
