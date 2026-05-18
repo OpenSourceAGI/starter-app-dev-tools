@@ -6,6 +6,9 @@
   "compatibility_flags": ["nodejs_compat"],
 
   // ── Container definition ──────────────────────────────────────────────────
+  // FUSE (/dev/fuse) is available in Cloudflare Containers by default since 2025-11-21.
+  // Internet access is enabled at the class level via `enableInternet = true` so the
+  // container can reach the R2 S3-compat endpoint and github.com.
   "containers": [
     {
       "class_name": "CodeServerContainer",

@@ -1,4 +1,5 @@
 import { Container } from "@cloudflare/containers";
+import type { StopParams } from "@cloudflare/containers";
 import { authenticate, handleAuthRoutes } from "./auth";
 
 // ─── Env ─────────────────────────────────────────────────────────────────────
@@ -56,9 +57,11 @@ export interface Env {
  */
 export class CodeServerContainer extends Container<Env> {
   defaultPort = 8080;
+  // Containers need internet to reach R2's HTTPS endpoint and github.com for cloning.
+  enableInternet = true;
 
-  constructor(ctx: DurableObjectState<unknown>, env: Env) {
-    super(ctx as DurableObjectState<{}>, env);
+  constructor(ctx: DurableObjectState<SqlStorage>, env: Env) {
+    super(ctx, env);
     this.sleepAfter = env.SLEEP_AFTER ?? "30m";
   }
 
@@ -74,13 +77,18 @@ export class CodeServerContainer extends Container<Env> {
   }
 
   private getConfig(key: string): string | null {
-    const rows = [
-      ...this.ctx.storage.sql.exec(
-        "SELECT value FROM user_config WHERE key = ?",
-        key
-      ),
-    ];
-    return rows.length > 0 ? (rows[0].value as string) : null;
+    try {
+      const rows = [
+        ...this.ctx.storage.sql.exec(
+          "SELECT value FROM user_config WHERE key = ?",
+          key
+        ),
+      ];
+      return rows.length > 0 ? (rows[0].value as string) : null;
+    } catch {
+      // Table doesn't exist yet — return null so callers fall back to defaults.
+      return null;
+    }
   }
 
   private setConfig(key: string, value: string): void {
@@ -119,7 +127,7 @@ export class CodeServerContainer extends Container<Env> {
     console.log(`[code-server] Container started — DO id: ${this.ctx.id}`);
   }
 
-  override onStop(_: { exitCode: number; reason: string }): void {
+  override onStop(_: StopParams): void {
     console.log(`[code-server] Container stopped — DO id: ${this.ctx.id}`);
   }
 
@@ -153,10 +161,16 @@ export class CodeServerContainer extends Container<Env> {
       return Response.json({ ok: true });
     }
 
+    // ── Internal RPC: container health / state ────────────────────────────────
+    if (url.pathname === "/__internal/state") {
+      const state = await this.getState();
+      return Response.json(state);
+    }
+
     // ── Proxy to code-server ──────────────────────────────────────────────────
     // Renew idle timer on every proxied request so an active browser session
-    // keeps the container alive even if wrangler's sleepAfter would fire.
-    (this as unknown as { renewActivityTimeout?: () => void }).renewActivityTimeout?.();
+    // keeps the container alive even if sleepAfter would fire.
+    this.renewActivityTimeout();
 
     const userId = this.getConfig("user_id") ?? "default";
     const password = this.getOrCreatePassword();
@@ -178,47 +192,84 @@ export class CodeServerContainer extends Container<Env> {
 
 // ─── Worker entry point ───────────────────────────────────────────────────────
 
-function firstVisitPage(email: string, password: string): Response {
+function setupPage(email: string, password: string, sleepAfter: string): Response {
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>code-server — your password</title>
+  <title>code-server — setup</title>
   <style>
+    *{box-sizing:border-box}
     body{font-family:system-ui,sans-serif;background:#0d1117;color:#e6edf3;
          display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
     .card{background:#161b22;border:1px solid #30363d;border-radius:12px;
-          padding:2rem 2.5rem;max-width:460px;width:100%}
+          padding:2rem 2.5rem;max-width:480px;width:100%}
     h1{margin:0 0 .25rem;font-size:1.25rem}
-    p{color:#8b949e;margin:0 0 1.5rem;font-size:.9rem}
+    .sub{color:#8b949e;margin:0 0 1.75rem;font-size:.9rem}
     .label{font-size:.75rem;color:#8b949e;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem}
-    .pw{font-family:monospace;font-size:1.15rem;background:#0d1117;border:1px solid #30363d;
-        border-radius:6px;padding:.6rem 1rem;letter-spacing:.1em;color:#58a6ff;user-select:all}
-    .note{margin-top:1.25rem;font-size:.82rem;color:#8b949e}
-    .btn{display:inline-block;margin-top:1.5rem;background:#238636;color:#fff;border-radius:6px;
-         padding:.55rem 1.25rem;text-decoration:none;font-size:.9rem}
+    .pw{font-family:monospace;font-size:1.1rem;background:#0d1117;border:1px solid #30363d;
+        border-radius:6px;padding:.6rem 1rem;letter-spacing:.08em;color:#58a6ff;user-select:all;
+        display:flex;justify-content:space-between;align-items:center;gap:.5rem}
+    .pw span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .copy-btn{background:#21262d;border:1px solid #30363d;color:#e6edf3;border-radius:4px;
+              padding:.2rem .6rem;font-size:.75rem;cursor:pointer;white-space:nowrap;flex-shrink:0}
+    .copy-btn:hover{background:#30363d}
+    .note{margin-top:1rem;font-size:.82rem;color:#8b949e;line-height:1.5}
+    .actions{display:flex;gap:.75rem;margin-top:1.5rem;flex-wrap:wrap}
+    .btn{display:inline-flex;align-items:center;background:#238636;color:#fff;border-radius:6px;
+         padding:.55rem 1.25rem;text-decoration:none;font-size:.9rem;border:none;cursor:pointer}
     .btn:hover{background:#2ea043}
-    .logout{float:right;font-size:.8rem;color:#8b949e;text-decoration:none;margin-top:.25rem}
+    .btn-ghost{background:transparent;border:1px solid #30363d;color:#e6edf3}
+    .btn-ghost:hover{background:#21262d}
+    .badge{display:inline-block;background:#21262d;border:1px solid #30363d;border-radius:4px;
+           padding:.15rem .5rem;font-size:.75rem;color:#8b949e;margin-left:.5rem}
+    .logout{float:right;font-size:.8rem;color:#8b949e;text-decoration:none}
     .logout:hover{color:#e6edf3}
+    hr{border:none;border-top:1px solid #21262d;margin:1.5rem 0}
   </style>
 </head>
 <body>
   <div class="card">
     <a class="logout" href="/auth/logout">Sign out</a>
-    <h1>Your cloud IDE is starting</h1>
-    <p>Signed in as <strong>${email}</strong></p>
+    <h1>Your cloud IDE is ready <span class="badge">starting…</span></h1>
+    <p class="sub">Signed in as <strong>${email}</strong></p>
+
     <div class="label">Your unique password</div>
-    <div class="pw" id="pw">${password}</div>
+    <div class="pw">
+      <span id="pw">${password}</span>
+      <button class="copy-btn" onclick="copyPw()">Copy</button>
+    </div>
     <p class="note">
-      This password is unique to you and stored securely — it never changes unless
-      you request a reset at <code>/reset-password</code>.
-      Copy it before clicking below.
+      This password is unique to you — it never changes unless you request a reset.
+      The IDE sleeps after <strong>${sleepAfter}</strong> of inactivity to save cost
+      and wakes automatically on your next visit.
     </p>
-    <a class="btn" href="/" onclick="navigator.clipboard?.writeText('${password}')">
-      Copy &amp; open code-server &rarr;
-    </a>
+
+    <div class="actions">
+      <a class="btn" href="/" onclick="navigator.clipboard?.writeText('${password}')">
+        Copy &amp; open IDE &rarr;
+      </a>
+      <form method="POST" action="/reset-password" style="margin:0">
+        <button type="submit" class="btn btn-ghost">Reset password</button>
+      </form>
+    </div>
+
+    <hr>
+    <p class="note" style="margin:0">
+      <strong>GitHub repos</strong> configured for auto-clone are loaded into
+      <code>/home/coder/workspace/</code> on first boot. Workspace changes sync
+      automatically to R2 via FUSE.
+    </p>
   </div>
+  <script>
+    function copyPw() {
+      navigator.clipboard?.writeText(document.getElementById('pw').textContent ?? '');
+      const btn = document.querySelector('.copy-btn');
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = 'Copy', 1500);
+    }
+  </script>
 </body>
 </html>`;
   return new Response(html, {
@@ -252,6 +303,7 @@ export default {
     };
 
     // Register userId in the DO's SQLite so it can build the R2 prefix.
+    // This is idempotent and cheap (a single SQL upsert).
     await stub.fetch(
       new Request("http://internal/__internal/init", {
         method: "POST",
@@ -260,13 +312,13 @@ export default {
       })
     );
 
-    // ── /setup — first-visit password reveal page ────────────────────────────
+    // ── /setup — password reveal + first-visit instructions ──────────────────
     if (url.pathname === "/setup") {
       const pwResp = await stub.fetch(
         new Request("http://internal/__internal/password")
       );
       const { password } = (await pwResp.json()) as { password: string };
-      return firstVisitPage(email, password);
+      return setupPage(email, password, env.SLEEP_AFTER ?? "30m");
     }
 
     // ── /reset-password — regenerate password (POST only) ───────────────────
@@ -277,6 +329,15 @@ export default {
         })
       );
       return Response.redirect(new URL("/setup", url).toString(), 303);
+    }
+
+    // ── /status — container state (JSON) ────────────────────────────────────
+    if (url.pathname === "/status") {
+      const stateResp = await stub.fetch(
+        new Request("http://internal/__internal/state")
+      );
+      const state = await stateResp.json();
+      return Response.json({ userId, email, container: state });
     }
 
     // ── Proxy everything else to code-server ─────────────────────────────────
