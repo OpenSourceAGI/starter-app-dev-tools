@@ -46,7 +46,7 @@
     {
       "binding": "TEAMS_DB",
       "database_name": "vscode-cloud-teams",
-      "database_id": "",  // paste the ID returned by `wrangler d1 create vscode-cloud-teams`
+      "database_id": "10349099-02ed-447b-b4a2-b096c4c04c5d",  // paste the ID returned by `wrangler d1 create vscode-cloud-teams`
     },
   ],
 
@@ -57,7 +57,7 @@
   "kv_namespaces": [
     {
       "binding": "SESSION_STORE",
-      "id": "",  // paste your KV namespace ID here after running the command above
+      "id": "b70d3fd540204ba0b92a34309ab4b94e",  // paste your KV namespace ID here after running the command above
     },
   ],
 
