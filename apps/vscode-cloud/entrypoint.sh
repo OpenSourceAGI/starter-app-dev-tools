@@ -63,7 +63,8 @@ if [[ -n "$GITHUB_REPOS" ]]; then
 
     if [[ -d "$target/.git" ]]; then
       echo "[entrypoint] Pulling latest for ${repo}"
-      git -C "$target" pull --ff-only 2>/dev/null || echo "[entrypoint] Warning: pull failed for ${repo}, using cached copy"
+      git -C "$target" pull --ff-only 2>/dev/null \
+        || echo "[entrypoint] Warning: pull failed for ${repo}, using cached copy"
     else
       echo "[entrypoint] Cloning ${repo}"
       git clone --depth=50 "https://github.com/${repo}.git" "$target" \
@@ -72,7 +73,7 @@ if [[ -n "$GITHUB_REPOS" ]]; then
   done
 fi
 
-# ── VSCode workspace settings for FUSE performance ───────────────────────────
+# ── VSCode workspace settings ─────────────────────────────────────────────────
 # Written only once; users can override later without it being clobbered.
 VSCODE_DIR="${WORKSPACE}/.vscode"
 SETTINGS_FILE="${VSCODE_DIR}/settings.json"
@@ -80,6 +81,16 @@ if [[ ! -f "$SETTINGS_FILE" ]]; then
   mkdir -p "$VSCODE_DIR"
   cat > "$SETTINGS_FILE" <<'SETTINGS'
 {
+  "workbench.iconTheme": "material-icon-theme",
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.fontFamily": "'JetBrains Mono', 'Fira Code', monospace",
+  "editor.fontSize": 14,
+  "editor.fontLigatures": true,
+  "editor.tabSize": 2,
+  "editor.wordWrap": "on",
+  "terminal.integrated.defaultProfile.linux": "bash",
+  "terminal.integrated.fontSize": 13,
   "files.watcherExclude": {
     "**/.git/objects/**": true,
     "**/.git/subtree-cache/**": true,
@@ -87,7 +98,8 @@ if [[ ! -f "$SETTINGS_FILE" ]]; then
     "**/__pycache__/**": true
   },
   "files.exclude": {
-    "**/.git": true
+    "**/.git": true,
+    "**/__pycache__": true
   },
   "search.followSymlinks": false,
   "search.exclude": {
@@ -95,13 +107,16 @@ if [[ ! -f "$SETTINGS_FILE" ]]; then
     "**/.git": true,
     "**/__pycache__": true
   },
-  "editor.formatOnSave": true,
-  "terminal.integrated.defaultProfile.linux": "bash"
+  "gitlens.currentLine.enabled": true,
+  "errorLens.enabledDiagnosticLevels": ["error", "warning"],
+  "cSpell.enabled": true
 }
 SETTINGS
   echo "[entrypoint] VSCode workspace settings written"
 fi
 
 # ── Start code-server ─────────────────────────────────────────────────────────
-# PASSWORD is injected by the Durable Object via envVars before container start.
-exec /usr/bin/entrypoint.sh --bind-addr 0.0.0.0:8080 --auth password "${WORKSPACE}"
+# Auth is handled by the Cloudflare Worker (CF Access JWT or Google OAuth session).
+# The container is only reachable through the authenticated Worker, so --auth none
+# is safe — no password prompt is shown to users.
+exec /usr/bin/entrypoint.sh --bind-addr 0.0.0.0:8080 --auth none "${WORKSPACE}"

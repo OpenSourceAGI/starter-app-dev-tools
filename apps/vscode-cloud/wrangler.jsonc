@@ -90,6 +90,9 @@
   ],
 
   // ── Secrets (set via CLI, never committed) ────────────────────────────────
+  // Auth is handled by the Worker — code-server runs with --auth none.
+  // The container is only reachable through the authenticated Worker proxy.
+  //
   // R2 credentials for FUSE mount (geesefs inside the container):
   //   wrangler secret put R2_ACCESS_KEY_ID
   //   wrangler secret put R2_SECRET_ACCESS_KEY

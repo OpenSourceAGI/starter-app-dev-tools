@@ -33,59 +33,8 @@ export async function handleAuthRoutes(
 ): Promise<Response | null> {
   if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET || !env.SESSION_STORE) return null;
 
-  // ── /auth/login landing page ──────────────────────────────────────────────
-  // Show a branded sign-in page rather than jumping straight to Google so
-  // users know which app they are authenticating into.
-  if (url.pathname === "/auth/login" && request.method === "GET" && !url.searchParams.has("direct")) {
-    const params = new URLSearchParams({
-      client_id: env.GOOGLE_CLIENT_ID,
-      redirect_uri: `${url.origin}/auth/callback`,
-      response_type: "code",
-      scope: "openid email profile",
-      prompt: "select_account",
-    });
-    const googleUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
-    const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Sign in — code-server</title>
-  <style>
-    body{font-family:system-ui,sans-serif;background:#0d1117;color:#e6edf3;
-         display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
-    .card{background:#161b22;border:1px solid #30363d;border-radius:12px;
-          padding:2.5rem;max-width:380px;width:100%;text-align:center}
-    h1{margin:0 0 .5rem;font-size:1.4rem}
-    p{color:#8b949e;margin:0 0 2rem;font-size:.9rem}
-    .google-btn{display:inline-flex;align-items:center;gap:.75rem;background:#fff;color:#3c4043;
-                border-radius:6px;padding:.65rem 1.5rem;text-decoration:none;font-size:.95rem;
-                font-weight:500;border:1px solid #dadce0}
-    .google-btn:hover{background:#f8f8f8;box-shadow:0 1px 3px rgba(0,0,0,.2)}
-    .google-logo{width:20px;height:20px;flex-shrink:0}
-  </style>
-</head>
-<body>
-  <div class="card">
-    <h1>Sign in to code-server</h1>
-    <p>Your personal cloud IDE — one container, fully isolated.</p>
-    <a class="google-btn" href="${googleUrl}">
-      <svg class="google-logo" viewBox="0 0 48 48">
-        <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.7 2.4 30.2 0 24 0 14.7 0 6.7 5.4 2.8 13.3l7.8 6C12.4 13 17.8 9.5 24 9.5z"/>
-        <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 7.1-10 7.1-17z"/>
-        <path fill="#FBBC05" d="M10.6 28.7A14.6 14.6 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.8-6A23.9 23.9 0 0 0 0 24c0 3.9.9 7.5 2.8 10.7l7.8-6z"/>
-        <path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.6 2.2-7.7 2.2-6.2 0-11.5-4.2-13.4-9.8l-7.8 6C6.7 42.6 14.7 48 24 48z"/>
-      </svg>
-      Sign in with Google
-    </a>
-  </div>
-</body>
-</html>`;
-    return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
-  }
-
-  // ── /auth/login?direct — skip landing page, redirect straight to Google ──
-  if (url.pathname === "/auth/login" && url.searchParams.has("direct")) {
+  // ── /auth/login — redirect to Google consent screen ─────────────────────
+  if (url.pathname === "/auth/login" && request.method === "GET") {
     const params = new URLSearchParams({
       client_id: env.GOOGLE_CLIENT_ID,
       redirect_uri: `${url.origin}/auth/callback`,
@@ -138,11 +87,11 @@ export async function handleAuthRoutes(
       { expirationTtl: ttl }
     );
 
-    // Redirect to /setup so users see their password before code-server prompts for it.
+    // Redirect to / — the Worker proxies straight to code-server (no password page needed).
     return new Response(null, {
       status: 302,
       headers: {
-        Location: "/setup",
+        Location: "/",
         "Set-Cookie": `__session=${sessionId}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${ttl}`,
       },
     });
