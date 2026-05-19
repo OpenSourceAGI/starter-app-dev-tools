@@ -51,7 +51,8 @@ RUN for ext in \
     formulahendry.code-runner \
     pkief.material-icon-theme \
     usernamehw.errorlens \
-    streetsidesoftware.code-spell-checker; \
+    streetsidesoftware.code-spell-checker \
+    WakaTime.vscode-wakatime; \
   do \
     code-server --install-extension "$ext" || echo "[docker] Warning: failed to install $ext"; \
   done

@@ -39,6 +39,17 @@
     },
   ],
 
+  // ── D1 database — teams, members, invites ────────────────────────────────
+  // Create with: wrangler d1 create vscode-cloud-teams
+  // Then paste the returned database_id below.
+  "d1_databases": [
+    {
+      "binding": "TEAMS_DB",
+      "database_name": "vscode-cloud-teams",
+      "database_id": "",  // paste the ID returned by `wrangler d1 create vscode-cloud-teams`
+    },
+  ],
+
   // ── KV namespace — Google OAuth sessions ─────────────────────────────────
   // Only needed when using Google OAuth (option B auth).
   // Create with: wrangler kv namespace create SESSION_STORE
@@ -73,6 +84,17 @@
     // ── R2 bucket name ────────────────────────────────────────────────────────
     "R2_BUCKET_NAME": "vscode-cloud-workspaces",
 
+    // ── Teams & admin ─────────────────────────────────────────────────────────
+    // Comma-separated emails with platform-wide admin access to /admin.
+    // Any authenticated user can also access /admin for teams they belong to.
+    "ADMIN_EMAILS": "",
+
+    // ── WakaTime (optional) ───────────────────────────────────────────────────
+    // If set, auto-writes ~/.wakatime.cfg in every container so users don't
+    // need to configure their API key manually.
+    // Get your key at wakatime.com/settings/account (or use a team API key).
+    "WAKATIME_API_KEY": "",
+
     // ── GitHub repo auto-cloning ──────────────────────────────────────────────
     // Comma-separated "owner/repo" pairs cloned into /workspace on container start.
     // Example: "myorg/frontend,myorg/api"
@@ -91,22 +113,22 @@
 
   // ── Secrets (set via CLI, never committed) ────────────────────────────────
   // Auth is handled by the Worker — code-server runs with --auth none.
-  // The container is only reachable through the authenticated Worker proxy.
   //
-  // R2 credentials for FUSE mount (geesefs inside the container):
+  // R2 credentials (FUSE mount inside container):
   //   wrangler secret put R2_ACCESS_KEY_ID
   //   wrangler secret put R2_SECRET_ACCESS_KEY
   //   wrangler secret put R2_ACCOUNT_ID
   //
-  // Google OAuth (if using auth option B):
+  // Google OAuth:
   //   wrangler secret put GOOGLE_CLIENT_SECRET
   //
-  // GitHub (if cloning private repos via GITHUB_REPOS):
+  // GitHub (private repos):
   //   wrangler secret put GITHUB_TOKEN
   //
   // Initial setup:
   //   wrangler login
   //   wrangler r2 bucket create vscode-cloud-workspaces
-  //   wrangler kv namespace create SESSION_STORE   # only if using Google OAuth
+  //   wrangler d1 create vscode-cloud-teams        # paste database_id above
+  //   wrangler kv namespace create SESSION_STORE   # paste id in kv_namespaces above
   //   wrangler deploy
 }

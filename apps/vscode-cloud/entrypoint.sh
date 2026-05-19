@@ -115,6 +115,17 @@ SETTINGS
   echo "[entrypoint] VSCode workspace settings written"
 fi
 
+# ── WakaTime auto-config ─────────────────────────────────────────────────────
+# If WAKATIME_API_KEY is injected by the Worker, write ~/.wakatime.cfg so the
+# pre-installed extension activates without manual setup.
+if [[ -n "$WAKATIME_API_KEY" ]]; then
+  cat > "$HOME/.wakatime.cfg" <<WAKA
+[settings]
+api_key = ${WAKATIME_API_KEY}
+WAKA
+  echo "[entrypoint] WakaTime configured"
+fi
+
 # ── Start code-server ─────────────────────────────────────────────────────────
 # Auth is handled by the Cloudflare Worker (CF Access JWT or Google OAuth session).
 # The container is only reachable through the authenticated Worker, so --auth none
