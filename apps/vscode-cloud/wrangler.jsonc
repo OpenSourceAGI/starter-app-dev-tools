@@ -111,6 +111,15 @@
     },
   ],
 
+  // ── Observability ─────────────────────────────────────────────────────────
+  // Enables Cloudflare Workers Observability: logs, traces, and metrics visible
+  // in the Cloudflare dashboard under Workers & Pages → your worker → Observability.
+  // head_sampling_rate: fraction of requests to trace (1 = 100%, 0.1 = 10%).
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+  },
+
   // ── Secrets (set via CLI, never committed) ────────────────────────────────
   // Auth is handled by the Worker — code-server runs with --auth none.
   //
