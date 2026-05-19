@@ -1,67 +1,158 @@
+# ── Base image ────────────────────────────────────────────────────────────────
 FROM codercom/code-server:ubuntu
 
-# ── System packages (run as root) ─────────────────────────────────────────────
+LABEL org.opencontainers.image.title="vscode-cloud" \
+      org.opencontainers.image.description="code-server with multi-language runtimes, AI CLIs, language servers, and R2-backed workspace persistence" \
+      org.opencontainers.image.source="https://github.com/OpenSourceAGI/appdemo-dev-tools"
+
+# ── System packages ───────────────────────────────────────────────────────────
 USER root
 
-RUN apt-get update && apt-get install -y \
-    git \
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Single apt layer: system utilities + all language runtimes
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # system utilities
     curl \
     wget \
+    git \
     vim \
+    jq \
+    zip \
+    unzip \
+    ca-certificates \
+    gnupg \
+    lsb-release \
+    shellcheck \
+    # build toolchain
     build-essential \
+    pkg-config \
+    # FUSE (R2/geesefs workspace mount)
     fuse3 \
+    libfuse2 \
+    # Python
     python3 \
     python3-pip \
     python3-venv \
-    && rm -rf /var/lib/apt/lists/*
+    python3-dev \
+    # Go
+    golang \
+    # Rust (bootstrapped via rustup below for a current stable toolchain)
+    # Java + build tools
+    default-jdk \
+    maven \
+    gradle \
+    # PHP
+    php-cli \
+    composer \
+    # Ruby
+    ruby-full \
+    luarocks \
+    # Fonts (settings.json references JetBrains Mono)
+    fonts-jetbrains-mono \
+    fonts-firacode \
+  && rm -rf /var/lib/apt/lists/*
 
-# geesefs — S3/R2-compatible FUSE filesystem
-RUN curl -L https://github.com/yandex-cloud/geesefs/releases/latest/download/geesefs-linux-amd64 \
-    -o /usr/local/bin/geesefs && chmod +x /usr/local/bin/geesefs
+# Rust via rustup so we get a current stable toolchain, not the distro's ancient one
+ENV RUSTUP_HOME=/usr/local/rustup \
+    CARGO_HOME=/usr/local/cargo \
+    PATH=/usr/local/cargo/bin:$PATH
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+    | sh -s -- -y --no-modify-path --default-toolchain stable --profile minimal \
+  && rustup component add rust-analyzer \
+  && chmod -R a+rx /usr/local/rustup /usr/local/cargo
 
-# Allow non-root users to mount FUSE filesystems
+# geesefs — S3/R2-compatible FUSE filesystem for workspace persistence
+RUN curl -fsSL https://github.com/yandex-cloud/geesefs/releases/latest/download/geesefs-linux-amd64 \
+    -o /usr/local/bin/geesefs \
+  && chmod +x /usr/local/bin/geesefs
+
+# Allow non-root users to mount FUSE filesystems (needed by geesefs)
 RUN echo "user_allow_other" >> /etc/fuse.conf
 
-# Node.js LTS (used by code-server and the CLI tools below)
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get install -y nodejs && \
-    rm -rf /var/lib/apt/lists/*
+# ── Node.js LTS ───────────────────────────────────────────────────────────────
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+  && apt-get install -y --no-install-recommends nodejs \
+  && rm -rf /var/lib/apt/lists/*
 
-# ── AI coding CLIs ────────────────────────────────────────────────────────────
-# Installed globally so they are on PATH for every user and every terminal session.
+# ── Global npm tools ──────────────────────────────────────────────────────────
+# AI coding CLIs + TypeScript + language servers for VS Code IntelliSense
+ENV NPM_CONFIG_PREFIX=/usr/local
 RUN npm install -g \
     @anthropic-ai/claude-code \
-    @openai/codex
+    @openai/codex \
+    typescript \
+    typescript-language-server \
+    pyright \
+    bash-language-server \
+    yaml-language-server \
+    vscode-langservers-extracted \
+    dockerfile-language-server-nodejs \
+    prettier \
+    eslint
 
-# Workspace mount point
+# ── Workspace mount point ─────────────────────────────────────────────────────
 RUN mkdir -p /home/coder/workspace && chown -R coder:coder /home/coder
 
-# ── VS Code extensions (pre-installed at build time) ─────────────────────────
-# Installed from Open VSX Registry (code-server's default marketplace).
-# Failures are non-fatal — the IDE still launches without them.
+# ── VS Code extensions ────────────────────────────────────────────────────────
+# Installed from Open VSX Registry at build time; failures are non-fatal.
 USER coder
 
 RUN for ext in \
+    # AI assistants
+    saoudrizwan.claude-dev \
+    # Git
     eamodio.gitlens \
+    # Formatting & linting
     esbenp.prettier-vscode \
     dbaeumer.vscode-eslint \
+    editorconfig.editorconfig \
+    streetsidesoftware.code-spell-checker \
+    # Python
     ms-python.python \
+    ms-python.vscode-pylance \
+    # JavaScript / TypeScript
+    ms-vscode.vscode-typescript-next \
+    # Go
+    golang.Go \
+    # Rust
+    rust-lang.rust-analyzer \
+    # Java
+    redhat.java \
+    vscjava.vscode-maven \
+    vscjava.vscode-gradle \
+    # Web
     bradlc.vscode-tailwindcss \
-    christian-kohler.path-intellisense \
-    formulahendry.code-runner \
+    vue.volar \
+    svelte.svelte-vscode \
+    graphql.vscode-graphql \
+    # Data / config formats
+    redhat.vscode-yaml \
+    redhat.vscode-xml \
+    tamasfe.even-better-toml \
+    # Docker
+    ms-azuretools.vscode-docker \
+    # UX / productivity
     pkief.material-icon-theme \
     usernamehw.errorlens \
-    streetsidesoftware.code-spell-checker \
+    christian-kohler.path-intellisense \
+    formulahendry.code-runner \
+    # Time tracking
     WakaTime.vscode-wakatime; \
   do \
-    code-server --install-extension "$ext" || echo "[docker] Warning: failed to install $ext"; \
+    code-server --install-extension "$ext" \
+      || echo "[docker] Warning: failed to install $ext (non-fatal)"; \
   done
 
+# ── Entrypoint ────────────────────────────────────────────────────────────────
 WORKDIR /home/coder
 
 COPY --chown=coder:coder entrypoint.sh /home/coder/entrypoint.sh
 RUN chmod +x /home/coder/entrypoint.sh
 
 EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD curl -f http://localhost:8080/healthz || exit 1
 
 ENTRYPOINT ["/home/coder/entrypoint.sh"]
