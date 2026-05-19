@@ -1,68 +1,57 @@
 import { Container } from "@cloudflare/containers";
+import type { StopParams } from "@cloudflare/containers";
 import { authenticate, handleAuthRoutes } from "./auth";
+import { handleAdminRoutes } from "./admin";
 
 // ─── Env ─────────────────────────────────────────────────────────────────────
 
 export interface Env {
   CODE_SERVER: DurableObjectNamespace;
 
-  // ── Cloudflare Access (production — option A) ─────────────────────────────
-  /** e.g. https://yourteam.cloudflareaccess.com  —  set via wrangler var */
+  // ── Cloudflare Access (option A) ──────────────────────────────────────────
   TEAM_DOMAIN?: string;
-  /** Application Audience tag from the Access dashboard — set via wrangler var */
   POLICY_AUD?: string;
 
-  // ── Google OAuth (production — option B) ─────────────────────────────────
-  /** Google OAuth client ID — set via wrangler var */
+  // ── Google OAuth (option B) ───────────────────────────────────────────────
   GOOGLE_CLIENT_ID?: string;
-  /** Google OAuth client secret — set via wrangler secret */
   GOOGLE_CLIENT_SECRET?: string;
-  /** KV namespace for storing Google OAuth sessions (7-day TTL) */
   SESSION_STORE?: KVNamespace;
 
+  // ── Teams ─────────────────────────────────────────────────────────────────
+  /** D1 database for teams, members, and invites */
+  TEAMS_DB?: D1Database;
+  /** Comma-separated emails with platform-wide admin access to /admin */
+  ADMIN_EMAILS?: string;
+
   // ── Container behaviour ───────────────────────────────────────────────────
-  /** How long to keep container alive after last request. Default: 30m */
   SLEEP_AFTER: string;
 
-  // ── R2 workspace storage ─────────────────────────────────────────────────
-  /** R2 bucket binding — used to verify the bucket exists at deploy time */
+  // ── R2 workspace storage ──────────────────────────────────────────────────
   WORKSPACE_BUCKET: R2Bucket;
-  /** R2 API token access key (wrangler secret) — passed to container for FUSE mount */
   R2_ACCESS_KEY_ID?: string;
-  /** R2 API token secret key (wrangler secret) — passed to container for FUSE mount */
   R2_SECRET_ACCESS_KEY?: string;
-  /** Cloudflare account ID (wrangler secret) — needed for the R2 S3-compat endpoint */
   R2_ACCOUNT_ID?: string;
-  /** R2 bucket name (wrangler var) */
   R2_BUCKET_NAME: string;
 
   // ── GitHub repo auto-cloning ──────────────────────────────────────────────
-  /** Comma-separated list of "owner/repo" pairs to clone on container start */
   GITHUB_REPOS?: string;
-  /** GitHub personal access token for private repos (wrangler secret) */
   GITHUB_TOKEN?: string;
+
+  // ── WakaTime ──────────────────────────────────────────────────────────────
+  /** Optional: auto-configure WakaTime API key in every container (~/.wakatime.cfg) */
+  WAKATIME_API_KEY?: string;
 }
 
 // ─── Container / Durable Object ──────────────────────────────────────────────
 
-/**
- * One CodeServerContainer instance = one isolated code-server per user.
- *
- * Responsibilities:
- *  - Generate and persist a cryptographically random password per user in SQLite.
- *  - Inject that password + R2/GitHub credentials as env vars on container start.
- *  - Expose internal RPC endpoints for the Worker (init, password, reset).
- *  - Forward all other requests to code-server, renewing the idle timer each time.
- */
 export class CodeServerContainer extends Container<Env> {
   defaultPort = 8080;
+  enableInternet = true;
 
-  constructor(ctx: DurableObjectState<unknown>, env: Env) {
-    super(ctx as DurableObjectState<{}>, env);
+  constructor(ctx: DurableObjectState<SqlStorage>, env: Env) {
+    super(ctx, env);
     this.sleepAfter = env.SLEEP_AFTER ?? "30m";
   }
-
-  // ── SQLite helpers ─────────────────────────────────────────────────────────
 
   private initSchema(): void {
     this.ctx.storage.sql.exec(`
@@ -74,13 +63,17 @@ export class CodeServerContainer extends Container<Env> {
   }
 
   private getConfig(key: string): string | null {
-    const rows = [
-      ...this.ctx.storage.sql.exec(
-        "SELECT value FROM user_config WHERE key = ?",
-        key
-      ),
-    ];
-    return rows.length > 0 ? (rows[0].value as string) : null;
+    try {
+      const rows = [
+        ...this.ctx.storage.sql.exec(
+          "SELECT value FROM user_config WHERE key = ?",
+          key
+        ),
+      ];
+      return rows.length > 0 ? (rows[0].value as string) : null;
+    } catch {
+      return null;
+    }
   }
 
   private setConfig(key: string, value: string): void {
@@ -92,47 +85,21 @@ export class CodeServerContainer extends Container<Env> {
     );
   }
 
-  /**
-   * Return the user's password, generating a secure random one on first call.
-   * Uses base-62 chars (A-Z a-z 0-9) so it's safe for shell env vars and URLs.
-   */
-  private getOrCreatePassword(): string {
-    this.initSchema();
-
-    const stored = this.getConfig("password");
-    if (stored) return stored;
-
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    const bytes = new Uint8Array(24);
-    crypto.getRandomValues(bytes);
-    const password = Array.from(bytes)
-      .map((b) => chars[b % chars.length])
-      .join("");
-
-    this.setConfig("password", password);
-    return password;
-  }
-
-  // ── Lifecycle hooks ────────────────────────────────────────────────────────
-
   override onStart(): void {
-    console.log(`[code-server] Container started — DO id: ${this.ctx.id}`);
+    console.log(`[code-server] started — ${this.ctx.id}`);
   }
 
-  override onStop(_: { exitCode: number; reason: string }): void {
-    console.log(`[code-server] Container stopped — DO id: ${this.ctx.id}`);
+  override onStop(_: StopParams): void {
+    console.log(`[code-server] stopped — ${this.ctx.id}`);
   }
 
   override onError(error: unknown): void {
-    console.error(`[code-server] Container error:`, error);
+    console.error(`[code-server] error:`, error);
   }
-
-  // ── Request handler ────────────────────────────────────────────────────────
 
   override async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
 
-    // ── Internal RPC: register userId for this DO (idempotent) ───────────────
     if (url.pathname === "/__internal/init" && request.method === "POST") {
       const { userId } = (await request.json()) as { userId: string };
       this.initSchema();
@@ -140,29 +107,15 @@ export class CodeServerContainer extends Container<Env> {
       return Response.json({ ok: true });
     }
 
-    // ── Internal RPC: retrieve the current password ───────────────────────────
-    if (url.pathname === "/__internal/password") {
-      return Response.json({ password: this.getOrCreatePassword() });
+    if (url.pathname === "/__internal/state") {
+      return Response.json(await this.getState());
     }
 
-    // ── Internal RPC: reset password and restart container ────────────────────
-    if (url.pathname === "/__internal/reset-password" && request.method === "POST") {
-      this.initSchema();
-      this.ctx.storage.sql.exec("DELETE FROM user_config WHERE key = 'password'");
-      try { await this.stop(); } catch { /* already stopped */ }
-      return Response.json({ ok: true });
-    }
-
-    // ── Proxy to code-server ──────────────────────────────────────────────────
-    // Renew idle timer on every proxied request so an active browser session
-    // keeps the container alive even if wrangler's sleepAfter would fire.
-    (this as unknown as { renewActivityTimeout?: () => void }).renewActivityTimeout?.();
+    this.renewActivityTimeout();
 
     const userId = this.getConfig("user_id") ?? "default";
-    const password = this.getOrCreatePassword();
 
     this.envVars = {
-      PASSWORD: password,
       R2_ACCESS_KEY_ID: this.env.R2_ACCESS_KEY_ID ?? "",
       R2_SECRET_ACCESS_KEY: this.env.R2_SECRET_ACCESS_KEY ?? "",
       R2_ACCOUNT_ID: this.env.R2_ACCOUNT_ID ?? "",
@@ -170,88 +123,259 @@ export class CodeServerContainer extends Container<Env> {
       USER_ID: userId,
       GITHUB_REPOS: this.env.GITHUB_REPOS ?? "",
       GITHUB_TOKEN: this.env.GITHUB_TOKEN ?? "",
+      WAKATIME_API_KEY: this.env.WAKATIME_API_KEY ?? "",
     };
 
     return super.fetch(request);
   }
 }
 
-// ─── Worker entry point ───────────────────────────────────────────────────────
+// ─── Landing page ─────────────────────────────────────────────────────────────
 
-function firstVisitPage(email: string, password: string): Response {
+function landingPage(env: Env): Response {
+  const hasGoogleAuth = !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
+  const hasCFAccess = !!(env.TEAM_DOMAIN && env.POLICY_AUD);
+
+  const signInHref = hasGoogleAuth
+    ? "/auth/login"
+    : hasCFAccess
+    ? "/"
+    : "/?user=dev";
+  const signInLabel = hasGoogleAuth
+    ? "Sign in with Google"
+    : hasCFAccess
+    ? "Sign in"
+    : "Open IDE (dev mode)";
+
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>code-server — your password</title>
+  <title>Cloud IDE — VS Code for every developer</title>
   <style>
-    body{font-family:system-ui,sans-serif;background:#0d1117;color:#e6edf3;
-         display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
-    .card{background:#161b22;border:1px solid #30363d;border-radius:12px;
-          padding:2rem 2.5rem;max-width:460px;width:100%}
-    h1{margin:0 0 .25rem;font-size:1.25rem}
-    p{color:#8b949e;margin:0 0 1.5rem;font-size:.9rem}
-    .label{font-size:.75rem;color:#8b949e;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem}
-    .pw{font-family:monospace;font-size:1.15rem;background:#0d1117;border:1px solid #30363d;
-        border-radius:6px;padding:.6rem 1rem;letter-spacing:.1em;color:#58a6ff;user-select:all}
-    .note{margin-top:1.25rem;font-size:.82rem;color:#8b949e}
-    .btn{display:inline-block;margin-top:1.5rem;background:#238636;color:#fff;border-radius:6px;
-         padding:.55rem 1.25rem;text-decoration:none;font-size:.9rem}
-    .btn:hover{background:#2ea043}
-    .logout{float:right;font-size:.8rem;color:#8b949e;text-decoration:none;margin-top:.25rem}
-    .logout:hover{color:#e6edf3}
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d1117; --surface: #161b22; --border: #30363d;
+      --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff;
+      --green: #238636; --green-h: #2ea043; --purple: #a371f7;
+    }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; display: flex; flex-direction: column;
+    }
+    nav {
+      padding: 1rem 2rem; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .logo { font-size: 1rem; font-weight: 700; color: var(--text); text-decoration: none; }
+    .logo span { color: var(--accent); }
+    .nav-action { font-size: .875rem; }
+    .nav-action a { color: var(--muted); text-decoration: none; }
+    .nav-action a:hover { color: var(--text); }
+    main { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 0 1.5rem; }
+
+    /* ── Hero ── */
+    .hero { text-align: center; padding: 5rem 0 3.5rem; max-width: 640px; width: 100%; }
+    .hero-badge {
+      display: inline-block; background: #1a1f2e; border: 1px solid #2d3754;
+      border-radius: 999px; padding: .25rem 1rem;
+      font-size: .75rem; color: var(--accent); letter-spacing: .04em; margin-bottom: 1.5rem;
+    }
+    h1 {
+      font-size: clamp(2.2rem, 5vw, 3.5rem); font-weight: 700;
+      line-height: 1.12; margin-bottom: 1.1rem; letter-spacing: -.03em;
+    }
+    h1 em { font-style: normal; color: var(--accent); }
+    .hero-sub {
+      font-size: 1.1rem; color: var(--muted); line-height: 1.7; margin-bottom: 2.5rem;
+    }
+    .hero-actions { display: flex; gap: .75rem; flex-wrap: wrap; justify-content: center; }
+    .btn-primary {
+      background: var(--green); color: #fff; border-radius: 8px;
+      padding: .7rem 1.75rem; text-decoration: none; font-size: .95rem; font-weight: 500;
+    }
+    .btn-primary:hover { background: var(--green-h); }
+    .btn-ghost {
+      background: transparent; color: var(--muted); border: 1px solid var(--border);
+      border-radius: 8px; padding: .7rem 1.75rem; text-decoration: none; font-size: .95rem;
+    }
+    .btn-ghost:hover { background: var(--surface); color: var(--text); }
+
+    /* ── Feature grid ── */
+    .section { width: 100%; max-width: 900px; padding: 2rem 0 3.5rem; }
+    .section-label {
+      font-size: .72rem; text-transform: uppercase; letter-spacing: .1em;
+      color: var(--muted); margin-bottom: 1.25rem;
+    }
+    .feature-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(195px, 1fr));
+      gap: 1px; background: var(--border);
+      border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+    }
+    .feature {
+      background: var(--surface); padding: 1.4rem 1.25rem;
+      display: flex; flex-direction: column; gap: .45rem;
+    }
+    .fi { font-size: 1.35rem; }
+    .ft { font-size: .875rem; font-weight: 600; }
+    .fd { font-size: .78rem; color: var(--muted); line-height: 1.55; }
+
+    /* ── Teams CTA ── */
+    .teams-cta {
+      width: 100%; max-width: 900px;
+      background: linear-gradient(135deg, #161b22 0%, #1a1f2e 100%);
+      border: 1px solid #2d3754; border-radius: 14px;
+      padding: 2.5rem 2rem; margin-bottom: 4rem;
+      display: flex; gap: 2rem; align-items: center; flex-wrap: wrap;
+    }
+    .teams-cta-text { flex: 1; min-width: 220px; }
+    .teams-cta-text h2 { font-size: 1.4rem; margin-bottom: .5rem; }
+    .teams-cta-text p { color: var(--muted); font-size: .9rem; line-height: 1.6; }
+    .teams-cta-pills { display: flex; flex-direction: column; gap: .5rem; min-width: 220px; }
+    .pill {
+      display: flex; align-items: center; gap: .6rem;
+      font-size: .82rem; color: var(--muted);
+    }
+    .pill-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+    .teams-cta-action { display: flex; flex-direction: column; gap: .75rem; align-items: flex-start; }
+    .btn-teams {
+      background: var(--purple); color: #fff; border-radius: 8px;
+      padding: .7rem 1.5rem; text-decoration: none; font-size: .9rem; font-weight: 500;
+      white-space: nowrap;
+    }
+    .btn-teams:hover { filter: brightness(1.1); }
+
+    footer {
+      border-top: 1px solid var(--border); padding: 1.5rem 2rem;
+      text-align: center; font-size: .78rem; color: var(--muted);
+    }
   </style>
 </head>
 <body>
-  <div class="card">
-    <a class="logout" href="/auth/logout">Sign out</a>
-    <h1>Your cloud IDE is starting</h1>
-    <p>Signed in as <strong>${email}</strong></p>
-    <div class="label">Your unique password</div>
-    <div class="pw" id="pw">${password}</div>
-    <p class="note">
-      This password is unique to you and stored securely — it never changes unless
-      you request a reset at <code>/reset-password</code>.
-      Copy it before clicking below.
-    </p>
-    <a class="btn" href="/" onclick="navigator.clipboard?.writeText('${password}')">
-      Copy &amp; open code-server &rarr;
-    </a>
-  </div>
+  <nav>
+    <a class="logo" href="/">Cloud <span>IDE</span></a>
+    <div class="nav-action"><a href="${signInHref}">${signInLabel}</a></div>
+  </nav>
+
+  <main>
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-badge">Powered by Cloudflare Containers</div>
+      <h1>The cloud IDE for<br><em>developer teams</em></h1>
+      <p class="hero-sub">
+        A full VS Code environment per developer — isolated, persistent, and
+        ready in seconds. Manage your whole team from one dashboard.
+      </p>
+      <div class="hero-actions">
+        <a class="btn-primary" href="${signInHref}">${signInLabel}</a>
+        <a class="btn-ghost" href="/admin">Team dashboard</a>
+      </div>
+    </section>
+
+    <!-- Developer features -->
+    <div class="section">
+      <div class="section-label">For developers</div>
+      <div class="feature-grid">
+        <div class="feature">
+          <div class="fi">📦</div>
+          <div class="ft">Isolated container per user</div>
+          <div class="fd">Your own VS Code — no shared state, no conflicts with teammates.</div>
+        </div>
+        <div class="feature">
+          <div class="fi">💾</div>
+          <div class="ft">Workspace persisted to R2</div>
+          <div class="fd">Files sync automatically to Cloudflare R2 via FUSE. Survive restarts.</div>
+        </div>
+        <div class="feature">
+          <div class="fi">🔄</div>
+          <div class="ft">GitHub repos auto-cloned</div>
+          <div class="fd">Configure repos once — they appear in your workspace on first boot.</div>
+        </div>
+        <div class="feature">
+          <div class="fi">🤖</div>
+          <div class="ft">Claude Code + Codex CLI</div>
+          <div class="fd">AI coding assistants pre-installed and ready in every terminal.</div>
+        </div>
+        <div class="feature">
+          <div class="fi">🔌</div>
+          <div class="ft">10+ extensions pre-installed</div>
+          <div class="fd">GitLens, ESLint, Prettier, Python, Tailwind, Error Lens, and more.</div>
+        </div>
+        <div class="feature">
+          <div class="fi">💤</div>
+          <div class="ft">Idle sleep</div>
+          <div class="fd">Containers hibernate after inactivity and wake instantly on return.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Teams CTA -->
+    <div class="teams-cta">
+      <div class="teams-cta-text">
+        <h2>Built for engineering teams</h2>
+        <p>
+          Group your developers into teams, track coding time with
+          WakaTime, and onboard new members with a single invite link —
+          all from a central admin dashboard.
+        </p>
+      </div>
+      <div class="teams-cta-pills">
+        <div class="pill"><span class="pill-dot"></span>Team accounts with role-based access</div>
+        <div class="pill"><span class="pill-dot"></span>Admin dashboard to manage members</div>
+        <div class="pill"><span class="pill-dot"></span>Invite developers by email — 7-day links</div>
+        <div class="pill"><span class="pill-dot"></span>WakaTime time tracking pre-installed</div>
+        <div class="pill"><span class="pill-dot"></span>Per-member container status at a glance</div>
+      </div>
+      <div class="teams-cta-action">
+        <a class="btn-teams" href="${signInHref}">Get started free</a>
+        <a class="btn-ghost" href="/admin" style="font-size:.85rem">Open dashboard</a>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    Built on Cloudflare Containers · code-server by Coder · WakaTime time tracking
+  </footer>
 </body>
 </html>`;
-  return new Response(html, {
-    headers: { "Content-Type": "text/html; charset=utf-8" },
-  });
+
+  return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
 }
+
+// ─── Worker entry point ───────────────────────────────────────────────────────
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
-    // ── Health check (unauthenticated) ──────────────────────────────────────
     if (url.pathname === "/health") {
       return Response.json({ status: "ok", ts: Date.now() });
     }
 
-    // ── Google OAuth routes (login / callback / logout) ─────────────────────
-    // Must run before authenticate() so unauthenticated users can reach /auth/login
     const authRouteResp = await handleAuthRoutes(request, env, url);
     if (authRouteResp) return authRouteResp;
 
-    // ── Authenticate via CF Access JWT, Google session, or dev header ────────
     const authResult = await authenticate(request, env);
-    if (authResult instanceof Response) return authResult;
+
+    if (authResult instanceof Response) {
+      const isGoogleOAuth = !!(env.GOOGLE_CLIENT_ID && !env.TEAM_DOMAIN);
+      if (isGoogleOAuth && request.method === "GET") return landingPage(env);
+      return authResult;
+    }
 
     const { email, userId } = authResult;
 
-    // ── Route to the user's personal container instance ─────────────────────
+    // ── Admin / teams routes ─────────────────────────────────────────────────
+    const adminResp = await handleAdminRoutes(request, env, url, email, userId);
+    if (adminResp) return adminResp;
+
+    // ── User's own container ─────────────────────────────────────────────────
     const stub = env.CODE_SERVER.getByName(userId) as unknown as {
       fetch(req: Request): Promise<Response>;
     };
 
-    // Register userId in the DO's SQLite so it can build the R2 prefix.
     await stub.fetch(
       new Request("http://internal/__internal/init", {
         method: "POST",
@@ -260,26 +384,11 @@ export default {
       })
     );
 
-    // ── /setup — first-visit password reveal page ────────────────────────────
-    if (url.pathname === "/setup") {
-      const pwResp = await stub.fetch(
-        new Request("http://internal/__internal/password")
-      );
-      const { password } = (await pwResp.json()) as { password: string };
-      return firstVisitPage(email, password);
+    if (url.pathname === "/status") {
+      const r = await stub.fetch(new Request("http://internal/__internal/state"));
+      return Response.json({ userId, email, container: await r.json() });
     }
 
-    // ── /reset-password — regenerate password (POST only) ───────────────────
-    if (url.pathname === "/reset-password" && request.method === "POST") {
-      await stub.fetch(
-        new Request("http://internal/__internal/reset-password", {
-          method: "POST",
-        })
-      );
-      return Response.redirect(new URL("/setup", url).toString(), 303);
-    }
-
-    // ── Proxy everything else to code-server ─────────────────────────────────
     return stub.fetch(request);
   },
 } satisfies ExportedHandler<Env>;

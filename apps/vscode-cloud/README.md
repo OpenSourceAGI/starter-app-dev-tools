@@ -1,6 +1,6 @@
 # vscode-cloud
 
-Per-user [code-server](https://github.com/coder/code-server) instances on Cloudflare Containers — one isolated VS Code environment per authenticated user, with workspace files persisted to R2 via FUSE and GitHub repos auto-cloned on first boot.
+Per-user [code-server](https://github.com/coder/code-server) instances on Cloudflare Containers — one isolated VS Code environment per authenticated user, with workspace files persisted to R2, GitHub repos auto-cloned on first boot, a team management dashboard, and WakaTime time tracking pre-installed.
 
 ## Architecture
 
@@ -8,154 +8,216 @@ Per-user [code-server](https://github.com/coder/code-server) instances on Cloudf
 Browser
   │
   ▼
-Worker (auth + routing)
+Worker  (auth + routing)
   ├─ CF Access JWT  ─────────┐
   ├─ Google OAuth session ───┤──▶ AuthUser { email, userId }
   └─ Dev mode header ────────┘
           │
-          ▼
-  Durable Object (per user, named by userId)
-    ├─ SQLite: password, userId
-    └─ Container (code-server on :8080)
-         ├─ geesefs FUSE → R2: users/{userId}/
-         └─ git clone → GITHUB_REPOS
+          ├─ /admin/*  ──▶  Teams handler  ──▶  D1  (teams / members / invites)
+          │
+          └─ /*  ──▶  Durable Object  (per user, named by userId)
+                          ├─ SQLite: userId → R2 prefix
+                          └─ Container  (code-server on :8080)
+                               ├─ geesefs FUSE → R2: users/{userId}/
+                               ├─ git clone → GITHUB_REPOS
+                               └─ ~/.wakatime.cfg  (if WAKATIME_API_KEY set)
 ```
 
 - **One Durable Object + Container per user** — fully isolated VS Code environments keyed by sanitised email.
-- **R2 workspace persistence** — geesefs mounts the R2 bucket at `/workspace` via FUSE; reads/writes sync automatically.
+- **Passwordless** — auth is enforced at the Worker layer (CF Access JWT or Google OAuth). `code-server` runs with `--auth none`; the container is never directly reachable.
+- **R2 workspace persistence** — [geesefs](https://github.com/yandex-cloud/geesefs) mounts the R2 bucket at `/home/coder/workspace` via FUSE; reads/writes sync automatically.
 - **GitHub repo auto-cloning** — set `GITHUB_REPOS` to clone repos into the workspace on container start.
-- **Two auth modes** — Cloudflare Access (enterprise) or Google OAuth (simpler setup), with dev-mode fallback.
-- **Secure random passwords** — 24-char base-62 string generated via Web Crypto on first boot, stored in DO SQLite.
-- **Idle cost control** — containers sleep after configurable inactivity (`SLEEP_AFTER`); `renewActivityTimeout()` keeps them alive while the browser tab is open.
+- **Teams dashboard** — create teams, invite members by email, manage roles, and see live container status per member.
+- **WakaTime time tracking** — extension pre-installed in every container; optionally auto-configured via `WAKATIME_API_KEY`.
+- **AI coding tools** — Claude Code and Codex CLIs installed globally; available in every terminal session.
+- **Idle cost control** — containers sleep after configurable inactivity (`SLEEP_AFTER`) and wake automatically on next request.
 
 ---
 
-## Quick start (dev mode)
+## Quick start
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org) 18+
+- [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-and-update/) (`npm install -g wrangler`)
+- [Docker](https://docs.docker.com/get-docker/) (required to build the container image locally)
+- A Cloudflare account on the **Workers Paid** plan ($5/mo minimum)
+
+### 1. Install dependencies
 
 ```bash
+cd apps/vscode-cloud
 npm install
+```
+
+### 2. Log in to Cloudflare
+
+```bash
 wrangler login
+```
+
+### 3. Create cloud resources
+
+```bash
+# R2 bucket for workspace files (one shared bucket, per-user prefixes)
 wrangler r2 bucket create vscode-cloud-workspaces
+
+# D1 database for teams, members, and invites
+wrangler d1 create vscode-cloud-teams
+# → Copy the returned database_id into wrangler.jsonc → d1_databases[0].database_id
+
+# KV namespace for Google OAuth sessions (skip if using CF Access instead)
+wrangler kv namespace create SESSION_STORE
+# → Copy the returned id into wrangler.jsonc → kv_namespaces[0].id
+```
+
+### 4. Set secrets
+
+```bash
+# R2 API token — generate at dash.cloudflare.com → R2 → Manage R2 API tokens
+# Grant "Object Read & Write" on the vscode-cloud-workspaces bucket
+wrangler secret put R2_ACCESS_KEY_ID
+wrangler secret put R2_SECRET_ACCESS_KEY
+wrangler secret put R2_ACCOUNT_ID        # your Cloudflare account ID
+
+# Google OAuth client secret (only needed for Google OAuth auth)
+wrangler secret put GOOGLE_CLIENT_SECRET
+
+# GitHub PAT with repo scope (only needed for private repos in GITHUB_REPOS)
+wrangler secret put GITHUB_TOKEN
+```
+
+### 5. Configure `wrangler.jsonc`
+
+Open `wrangler.jsonc` and fill in the blanks:
+
+```jsonc
+"d1_databases": [{ "database_id": "<paste from step 3>" }],
+"kv_namespaces":  [{ "id":          "<paste from step 3>" }],
+
+"vars": {
+  "GOOGLE_CLIENT_ID": "<your-client-id>.apps.googleusercontent.com",
+  "ADMIN_EMAILS":     "you@example.com",          // platform-wide admin access
+  "WAKATIME_API_KEY": "",                          // optional — see WakaTime section
+  "GITHUB_REPOS":     "myorg/frontend,myorg/api", // optional
+  "SLEEP_AFTER":      "30m"
+}
+```
+
+### 6. Deploy
+
+```bash
 wrangler deploy
 ```
 
-With `TEAM_DOMAIN`, `POLICY_AUD`, and `GOOGLE_CLIENT_ID` all empty, auth falls back to the `x-user-id` header or `?user=` query param. **Local testing only.**
-
+The Worker URL is printed at the end:
 ```
-https://vscode-cloud.<your-subdomain>.workers.dev/setup?user=alice
+https://vscode-cloud.<your-subdomain>.workers.dev
 ```
-
-Copy the generated password, click **Open code-server**.
 
 ---
 
-## Auth option A — Cloudflare Access
+## Auth setup
 
-Best for teams already using Cloudflare One. Validates the `Cf-Access-Jwt-Assertion` JWT from Access.
+### Option A — Cloudflare Access (recommended for teams)
 
-### 1. Create an Access application
+Best if your organisation already uses Cloudflare One. CF Access validates the `Cf-Access-Jwt-Assertion` JWT before the request reaches the Worker.
 
-1. [Cloudflare One](https://one.dash.cloudflare.com/) → **Access** → **Applications** → **Add** → **Self-hosted**
-2. Set the domain to your Worker route (e.g. `code.example.com`)
-3. Add an Allow policy (e.g. emails in `@yourcompany.com`)
-4. Copy the **AUD tag** from the Basic information tab
-
-### 2. Configure
+1. Go to [Cloudflare One](https://one.dash.cloudflare.com/) → **Access** → **Applications** → **Add** → **Self-hosted**
+2. Set the application domain to your Worker URL (e.g. `code.example.com`)
+3. Add an **Allow** policy scoped to your team's emails or identity provider
+4. Copy the **AUD tag** from the application's Basic information tab
 
 ```jsonc
 // wrangler.jsonc
 "vars": {
   "TEAM_DOMAIN": "https://yourteam.cloudflareaccess.com",
-  "POLICY_AUD":  "your-aud-tag"
+  "POLICY_AUD":  "<aud-tag>"
 }
 ```
-
-### 3. Deploy
 
 ```bash
 wrangler deploy
 ```
 
----
+### Option B — Google OAuth
 
-## Auth option B — Google OAuth
+Simpler for public-facing deployments. Sessions are stored as 7-day KV entries.
 
-Simpler for public-facing apps. Stores 7-day sessions in KV.
-
-### 1. Create OAuth credentials
-
-[console.cloud.google.com](https://console.cloud.google.com) → APIs & Services → Credentials → **Create OAuth 2.0 Client ID**
-
-- Application type: **Web application**
-- Authorised redirect URI: `https://vscode-cloud.<subdomain>.workers.dev/auth/callback`
-
-### 2. Create the KV namespace
+1. Open [Google Cloud Console](https://console.cloud.google.com) → **APIs & Services** → **Credentials** → **Create OAuth 2.0 Client ID**
+2. Application type: **Web application**
+3. Authorised redirect URI: `https://vscode-cloud.<subdomain>.workers.dev/auth/callback`
+4. Copy the **Client ID** and **Client Secret**
 
 ```bash
+# Create the KV namespace (if not done in step 3 above)
 wrangler kv namespace create SESSION_STORE
 # Paste the returned id into wrangler.jsonc → kv_namespaces[0].id
-```
 
-### 3. Configure
+wrangler secret put GOOGLE_CLIENT_SECRET
+```
 
 ```jsonc
 // wrangler.jsonc
 "vars": {
-  "GOOGLE_CLIENT_ID": "your-client-id.apps.googleusercontent.com"
+  "GOOGLE_CLIENT_ID": "<client-id>.apps.googleusercontent.com"
 }
 ```
-
-```bash
-wrangler secret put GOOGLE_CLIENT_SECRET
-```
-
-### 4. Deploy
 
 ```bash
 wrangler deploy
 ```
 
-Users hit `/auth/login` to authenticate, then get their `/setup` password page.
+Users visit the landing page, click **Sign in with Google**, and land directly in their IDE.
+
+### Dev mode (no auth)
+
+Leave `TEAM_DOMAIN`, `POLICY_AUD`, and `GOOGLE_CLIENT_ID` all empty. The Worker accepts an `x-user-id` header or `?user=` query param. **Never use this in production.**
+
+```
+https://vscode-cloud.<subdomain>.workers.dev/?user=alice
+```
 
 ---
 
 ## R2 workspace persistence
 
-Each user's workspace lives at `users/{userId}/` inside the shared R2 bucket, FUSE-mounted at `/home/coder/workspace` via [geesefs](https://github.com/yandex-cloud/geesefs).
+Each user's workspace lives at `users/{userId}/` inside the shared R2 bucket, FUSE-mounted at `/home/coder/workspace` inside the container via geesefs.
 
-### Setup
+Without R2 credentials the container falls back to an ephemeral local workspace — files are lost when the container sleeps.
+
+### Generate an R2 API token
+
+1. [Cloudflare Dashboard](https://dash.cloudflare.com) → **R2** → **Manage R2 API tokens** → **Create API token**
+2. Permissions: **Object Read & Write**
+3. Scope: **Specific bucket** → `vscode-cloud-workspaces`
 
 ```bash
-# Create bucket
-wrangler r2 bucket create vscode-cloud-workspaces
-
-# Generate an R2 API token at dash.cloudflare.com → R2 → Manage R2 API tokens
-# Give it Object Read & Write on vscode-cloud-workspaces
-wrangler secret put R2_ACCESS_KEY_ID
-wrangler secret put R2_SECRET_ACCESS_KEY
-wrangler secret put R2_ACCOUNT_ID   # your Cloudflare account ID
+wrangler secret put R2_ACCESS_KEY_ID      # Token Access Key ID
+wrangler secret put R2_SECRET_ACCESS_KEY  # Token Secret Access Key
+wrangler secret put R2_ACCOUNT_ID         # Your Cloudflare account ID
 ```
 
-Without these secrets the container falls back to an ephemeral local workspace (lost on restart).
+### FUSE performance settings
 
-### FUSE performance tuning
-
-The entrypoint mounts with `--attr-cache-ttl 60s --type-cache-ttl 60s` to reduce metadata round-trips. The container also writes a `.vscode/settings.json` on first boot:
+The entrypoint uses `--attr-cache-ttl 60s --type-cache-ttl 60s` to batch metadata calls. On first boot a `.vscode/settings.json` is written to the workspace:
 
 ```json
 {
-  "files.watcherExclude": { "**/.git/objects/**": true, "**/node_modules/**": true },
-  "search.followSymlinks": false
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/node_modules/**": true
+  },
+  "search.followSymlinks": false,
+  "editor.formatOnSave": true
 }
 ```
 
-This prevents the file watcher from hammering the FUSE mount on large repos.
+This prevents the VS Code file watcher from hammering the FUSE mount on large repos.
 
 ---
 
 ## GitHub repo auto-cloning
-
-Set `GITHUB_REPOS` to a comma-separated list of `owner/repo` pairs. On each container start the entrypoint clones any repo that isn't already present, or pulls the latest if it is.
 
 ```jsonc
 // wrangler.jsonc
@@ -164,27 +226,125 @@ Set `GITHUB_REPOS` to a comma-separated list of `owner/repo` pairs. On each cont
 }
 ```
 
+On each container start the entrypoint:
+- Clones any repo not already present (`--depth=50`)
+- Pulls the latest if the repo directory already exists
+
+Because the workspace is R2-backed, the clone only runs once per user.
+
 For private repos:
 
 ```bash
 wrangler secret put GITHUB_TOKEN   # PAT with repo scope
 ```
 
-Repos are cloned with `--depth=50` into `/home/coder/workspace/<repo-name>/`. Because the workspace is R2-backed, the clone only runs once per user — subsequent container starts pull instead.
+---
+
+## Teams dashboard
+
+### First-time setup
+
+The D1 schema is created automatically on the first request to `/admin` — no migrations to run manually.
+
+Designate platform admins (who can see all teams) via `wrangler.jsonc`:
+
+```jsonc
+"vars": {
+  "ADMIN_EMAILS": "alice@example.com,bob@example.com"
+}
+```
+
+Any authenticated user can also access `/admin` for teams they belong to.
+
+### Workflow
+
+1. **Sign in** → go to `/admin`
+2. Click **New Team** → enter a team name → you become the team admin
+3. On the team detail page, enter a developer's email and click **Send invite**
+4. Copy the generated invite URL and share it (Slack, email, etc.)
+5. The developer signs in, visits the invite URL, and is added to the team
+6. The members table shows each developer's **email**, **role**, **container status** (live), and **join date**
+7. Team admins can remove members at any time
+
+Invite links expire after **7 days** and are single-use.
+
+### Routes
+
+| Route | Auth | Description |
+|---|---|---|
+| `GET /admin` | User | Dashboard — teams you belong to (or all teams if admin) |
+| `GET /admin/team/new` | User | Create team form |
+| `POST /admin/team/create` | User | Create team, become admin |
+| `GET /admin/team/:id` | Member | Team detail: members, invites, WakaTime info |
+| `POST /admin/team/:id` | Admin | Invite member or remove member |
+| `GET /admin/accept-invite?token=` | User | Accept invite, join team |
 
 ---
 
-## Endpoints
+## WakaTime time tracking
 
-| Path | Auth | Description |
-|------|------|-------------|
-| `GET /health` | None | Uptime check — returns `{ status: "ok" }` |
-| `GET /auth/login` | None | Google OAuth — redirect to consent screen |
-| `GET /auth/callback` | None | Google OAuth — exchange code, set session cookie |
-| `GET /auth/logout` | None | Google OAuth — clear session, redirect to login |
-| `GET /setup` | Auth | Show the user's unique password (first-visit page) |
-| `POST /reset-password` | Auth | Regenerate password, reboot container, redirect to `/setup` |
-| `GET /*` | Auth | Proxied to the user's code-server instance |
+The [WakaTime](https://wakatime.com) extension is pre-installed in every container. It tracks coding time automatically and syncs to wakatime.com.
+
+### Manual setup (per developer)
+
+Each developer configures their own API key after opening the IDE:
+
+1. Open the Command Palette (`Ctrl+Shift+P`) → **WakaTime: API Key**
+2. Paste the key from [wakatime.com/settings/account](https://wakatime.com/settings/account)
+
+Or via terminal:
+
+```bash
+cat > ~/.wakatime.cfg <<EOF
+[settings]
+api_key = <your-api-key>
+EOF
+```
+
+### Auto-configure for all containers
+
+Set a shared API key (e.g. a WakaTime Teams project key) in `wrangler.jsonc`:
+
+```jsonc
+"vars": {
+  "WAKATIME_API_KEY": "<your-api-key>"
+}
+```
+
+The entrypoint writes `~/.wakatime.cfg` automatically on container start — no manual setup required.
+
+View team stats at [wakatime.com/dashboard](https://wakatime.com/dashboard).
+
+---
+
+## Pre-installed tools
+
+### AI CLIs (available in every terminal)
+
+| Tool | Command | Install |
+|---|---|---|
+| Claude Code | `claude` | `@anthropic-ai/claude-code` |
+| OpenAI Codex | `codex` | `@openai/codex` |
+
+### VS Code extensions
+
+Installed at image build time from [Open VSX Registry](https://open-vsx.org):
+
+| Extension | Purpose |
+|---|---|
+| GitLens | Git blame, history, and branch visualisation |
+| Prettier | Code formatting |
+| ESLint | JavaScript/TypeScript linting |
+| Python | Python language support |
+| Tailwind CSS IntelliSense | Tailwind class autocomplete |
+| Path Intellisense | Filename autocomplete |
+| Code Runner | Run code snippets from the editor |
+| Material Icon Theme | File icons |
+| Error Lens | Inline error and warning display |
+| Code Spell Checker | Spell checking in source files |
+| WakaTime | Automatic time tracking |
+
+Extension failures during image build are non-fatal — the IDE still launches.
 
 ---
 
@@ -193,72 +353,117 @@ Repos are cloned with `--depth=50` into `/home/coder/workspace/<repo-name>/`. Be
 ### Environment variables (`wrangler.jsonc` vars)
 
 | Variable | Default | Description |
-|----------|---------|-------------|
-| `SLEEP_AFTER` | `"30m"` | Container idle timeout. Supports `"30s"`, `"1h"`, etc. Max 24h |
-| `TEAM_DOMAIN` | `""` | Auth option A — CF Access team URL |
-| `POLICY_AUD` | `""` | Auth option A — Access AUD tag |
-| `GOOGLE_CLIENT_ID` | `""` | Auth option B — Google OAuth client ID |
+|---|---|---|
+| `SLEEP_AFTER` | `"30m"` | Container idle timeout. `"30s"`, `"1h"`, etc. Max 24h |
+| `TEAM_DOMAIN` | `""` | Auth A — CF Access team URL |
+| `POLICY_AUD` | `""` | Auth A — CF Access AUD tag |
+| `GOOGLE_CLIENT_ID` | `""` | Auth B — Google OAuth client ID |
+| `ADMIN_EMAILS` | `""` | Comma-separated emails with platform-wide `/admin` access |
+| `WAKATIME_API_KEY` | `""` | Auto-configure WakaTime in every container |
 | `R2_BUCKET_NAME` | `"vscode-cloud-workspaces"` | R2 bucket name |
-| `GITHUB_REPOS` | `""` | Comma-separated `owner/repo` list to clone |
+| `GITHUB_REPOS` | `""` | Comma-separated `owner/repo` list to auto-clone |
 
 ### Secrets (`wrangler secret put`)
 
 | Secret | Description |
-|--------|-------------|
+|---|---|
 | `R2_ACCESS_KEY_ID` | R2 API token key |
 | `R2_SECRET_ACCESS_KEY` | R2 API token secret |
 | `R2_ACCOUNT_ID` | Cloudflare account ID |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret (option B) |
-| `GITHUB_TOKEN` | GitHub PAT for private repos |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret (auth option B) |
+| `GITHUB_TOKEN` | GitHub PAT with `repo` scope (private repos only) |
+
+### Cloudflare resources
+
+| Resource | Binding | Purpose |
+|---|---|---|
+| R2 bucket | `WORKSPACE_BUCKET` | Workspace file storage |
+| D1 database | `TEAMS_DB` | Teams, members, invites |
+| KV namespace | `SESSION_STORE` | Google OAuth sessions (auth B only) |
 
 ### Container sizing
 
-Set in `wrangler.jsonc` → `containers[].instance_type`:
+Set in `wrangler.jsonc` → `containers[0].instance_type`:
 
-| Type | vCPU | RAM | Cost/hr | Use case |
-|------|------|-----|---------|---------|
-| `basic` | 0.5 | 512 MB | ~$0.15 | Light use only |
-| `standard-1` | 1 | 2 GB | ~$0.30 | **Default — works well** |
-| `standard-2` | 2 | 4 GB | ~$0.60 | Heavier projects / monorepos |
+| Type | vCPU | RAM | Cost/hr | Recommended for |
+|---|---|---|---|---|
+| `basic` | 0.5 | 512 MB | ~$0.15 | Light use / testing only |
+| `standard-1` | 1 | 2 GB | ~$0.30 | **Default — most projects** |
+| `standard-2` | 2 | 4 GB | ~$0.60 | Monorepos / heavy workloads |
 
 ---
 
 ## Cost estimates
 
-Containers are **on-demand** by default — billed only while running, ~$0 while sleeping.
+Containers are **on-demand** — billed only while running, ~$0 while sleeping.
 
 | Scenario | Est. monthly cost |
-|----------|------------------|
-| 1 user, always-on (standard-1) | ~$75 |
-| 10 users, 2hr/day avg (standard-1) | ~$18 |
-| 100 users, 1hr/day avg (standard-1) | ~$80 |
+|---|---|
+| 1 developer, always-on (`standard-1`) | ~$75 |
+| 10 developers, 2 hr/day avg | ~$18 |
+| 100 developers, 1 hr/day avg | ~$80 |
 
-Add $5/mo for Workers Paid plan + ~$10 for KV/R2 usage at scale.
+Add $5/mo for Workers Paid plan + ~$10 for KV/R2/D1 usage at scale.
 
-Check container status:
+Check live container status:
+
 ```bash
 npx wrangler containers list --status
 ```
 
 ---
 
-## Resetting a password
+## Endpoints
 
-```bash
-curl -X POST https://code.example.com/reset-password \
-  -H "Cf-Access-Jwt-Assertion: <token>"
-  # or pass the __session cookie for Google OAuth
-```
-
-This deletes the stored password from SQLite, stops the container, then redirects to `/setup` where the new password is shown. The container restarts fresh on next request.
+| Path | Auth | Description |
+|---|---|---|
+| `GET /` | — | Landing page (unauthenticated) or proxied to code-server (authenticated) |
+| `GET /health` | None | `{ status: "ok", ts: <ms> }` |
+| `GET /auth/login` | None | Redirect to Google OAuth consent screen |
+| `GET /auth/callback` | None | OAuth token exchange, set session cookie |
+| `GET /auth/logout` | None | Clear session, redirect to landing |
+| `GET /status` | Auth | JSON: `{ userId, email, container: { status, ... } }` |
+| `GET /admin` | Auth | Teams dashboard |
+| `GET /admin/team/new` | Auth | Create team form |
+| `POST /admin/team/create` | Auth | Submit new team |
+| `GET /admin/team/:id` | Member | Team detail: members, invites |
+| `POST /admin/team/:id` | Admin | Invite or remove a member |
+| `GET /admin/accept-invite?token=` | Auth | Accept invite, join team |
 
 ---
 
 ## Local development
 
 ```bash
-npm run dev      # wrangler dev (no real containers; simulates Workers runtime)
-npm run build    # type-check only
+npm run dev      # wrangler dev — simulates Workers runtime (no real containers)
+npm run build    # TypeScript type-check only
 ```
 
-In `wrangler dev`, leave all auth vars empty and use `?user=yourname` to switch between simulated users.
+In dev mode leave all auth vars empty and append `?user=yourname` to switch between simulated users:
+
+```
+http://localhost:8787/?user=alice
+http://localhost:8787/admin?user=alice
+```
+
+---
+
+## Troubleshooting
+
+**Container won't start**
+Run `npx wrangler containers list --status`. Cold starts can take up to ~13 seconds on first request after a sleep period.
+
+**R2 mount failing / workspace empty after restart**
+Check that all three R2 secrets are set (`R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_ACCOUNT_ID`). The container logs will show `[entrypoint] R2 mount ready` or the fallback message.
+
+**WakaTime not tracking**
+Open the Command Palette → **WakaTime: API Key** and verify the key. Alternatively check `cat ~/.wakatime.cfg` in the integrated terminal.
+
+**Google OAuth "redirect_uri_mismatch"**
+The redirect URI in Google Cloud Console must exactly match `https://<your-worker>.workers.dev/auth/callback` — no trailing slash.
+
+**Invite link not working**
+Invite links expire after 7 days and are single-use. Generate a new one from the team detail page.
+
+**Teams dashboard empty**
+Verify `TEAMS_DB` has a valid `database_id` in `wrangler.jsonc` and that `wrangler d1 create vscode-cloud-teams` was run. The D1 schema is created automatically on first `/admin` request.

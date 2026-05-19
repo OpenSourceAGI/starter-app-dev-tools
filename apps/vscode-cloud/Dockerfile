@@ -1,9 +1,8 @@
 FROM codercom/code-server:ubuntu
 
-# Run as root to install system packages and configure FUSE
+# ── System packages (run as root) ─────────────────────────────────────────────
 USER root
 
-# Install tools + FUSE3 support
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -11,25 +10,52 @@ RUN apt-get update && apt-get install -y \
     vim \
     build-essential \
     fuse3 \
+    python3 \
+    python3-pip \
+    python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
-# Install geesefs — an S3/R2-compatible FUSE filesystem with local caching and live sync
+# geesefs — S3/R2-compatible FUSE filesystem
 RUN curl -L https://github.com/yandex-cloud/geesefs/releases/latest/download/geesefs-linux-amd64 \
     -o /usr/local/bin/geesefs && chmod +x /usr/local/bin/geesefs
 
 # Allow non-root users to mount FUSE filesystems
 RUN echo "user_allow_other" >> /etc/fuse.conf
 
-# Install Node.js LTS
+# Node.js LTS (used by code-server and the CLI tools below)
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y nodejs && \
     rm -rf /var/lib/apt/lists/*
 
-# Create workspace mount point owned by coder
+# ── AI coding CLIs ────────────────────────────────────────────────────────────
+# Installed globally so they are on PATH for every user and every terminal session.
+RUN npm install -g \
+    @anthropic-ai/claude-code \
+    @openai/codex
+
+# Workspace mount point
 RUN mkdir -p /home/coder/workspace && chown -R coder:coder /home/coder
 
-# Switch back to coder user
+# ── VS Code extensions (pre-installed at build time) ─────────────────────────
+# Installed from Open VSX Registry (code-server's default marketplace).
+# Failures are non-fatal — the IDE still launches without them.
 USER coder
+
+RUN for ext in \
+    eamodio.gitlens \
+    esbenp.prettier-vscode \
+    dbaeumer.vscode-eslint \
+    ms-python.python \
+    bradlc.vscode-tailwindcss \
+    christian-kohler.path-intellisense \
+    formulahendry.code-runner \
+    pkief.material-icon-theme \
+    usernamehw.errorlens \
+    streetsidesoftware.code-spell-checker \
+    WakaTime.vscode-wakatime; \
+  do \
+    code-server --install-extension "$ext" || echo "[docker] Warning: failed to install $ext"; \
+  done
 
 WORKDIR /home/coder
 
