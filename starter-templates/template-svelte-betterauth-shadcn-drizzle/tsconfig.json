@@ -1,0 +1,38 @@
+{
+  "exclude": ["./src/lib/components/ui",
+  "**/src/wordlists/**",
+  "src/wordlists"],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
+    "rootDirs": [".", ".svelte-kit/types"],
+    "paths": {
+      "$lib/*": ["./src/lib/*"],
+      "$lib": ["./src/lib"],
+      "$components/*": ["./src/lib/components/*"],
+      "$app/environment": ["./node_modules/@sveltejs/kit/src/runtime/app/environment.js"],
+      "$app/forms": ["./node_modules/@sveltejs/kit/src/runtime/app/forms.js"],
+      "$app/navigation": ["./node_modules/@sveltejs/kit/src/runtime/app/navigation.js"],
+      "$app/paths": ["./node_modules/@sveltejs/kit/src/runtime/app/paths.js"],
+      "$app/server": ["./node_modules/@sveltejs/kit/src/runtime/app/server.js"],
+      "$app/stores": ["./node_modules/@sveltejs/kit/src/runtime/app/stores.js"],
+      "$app/state": ["./node_modules/@sveltejs/kit/src/runtime/app/state.js"],
+      "$env/dynamic/private": ["./node_modules/@sveltejs/kit/src/runtime/env-private.js"],
+      "$env/dynamic/public": ["./node_modules/@sveltejs/kit/src/runtime/env-public.js"]
+    },
+   "target": "ESNext",
+    "module": "ESNext",
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "checkJs": false,
+    "noEmitOnError": false,
+    "strict": false,
+    "isolatedModules": false,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "allowSyntheticDefaultImports": true
+  },
+  "include": [
+    "./src/**/*"
+   ]
+}

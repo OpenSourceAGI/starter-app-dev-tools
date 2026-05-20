@@ -1,3 +1,4 @@
+/// <reference types="@cloudflare/workers-types" />
 import { Container } from "@cloudflare/containers";
 import type { StopParams } from "@cloudflare/containers";
 import { authenticate, handleAuthRoutes } from "./auth";

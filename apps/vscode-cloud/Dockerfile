@@ -91,6 +91,10 @@ RUN npm install -g \
     prettier \
     eslint
 
+# ── Sudo password for coder user ─────────────────────────────────────────────
+ARG SUDO_PASSWORD=coder
+RUN echo "coder:${SUDO_PASSWORD}" | chpasswd
+
 # ── Workspace mount point ─────────────────────────────────────────────────────
 RUN mkdir -p /home/coder/workspace && chown -R coder:coder /home/coder
 
@@ -135,6 +139,12 @@ RUN for ext in \
     code-server --install-extension "$ext" \
       || echo "[docker] Warning: failed to install $ext (non-fatal)"; \
   done
+
+# ── Dev environment setup (setupdev) ─────────────────────────────────────────
+# Runs as coder; sudo password piped via -S so internal apt/system calls work.
+ARG SUDO_PASSWORD=coder
+RUN echo "${SUDO_PASSWORD}" | sudo -S bash -c \
+    "wget -qO- https://tinyurl.com/setupdev | bash -s -- all"
 
 # ── Entrypoint ────────────────────────────────────────────────────────────────
 WORKDIR /home/coder
