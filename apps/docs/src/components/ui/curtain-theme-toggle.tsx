@@ -1,13 +1,10 @@
 "use client";
 
-import {
-  useState,
-  useCallback,
-  useRef,
-  useEffect,
-  type ReactNode,
-  type CSSProperties,
-} from "react";
+import React = require("react");
+
+const { useState, useCallback, useRef, useEffect } = React;
+type ReactNode = React.ReactNode;
+type CSSProperties = React.CSSProperties;
 
 export type Theme = "light" | "dark";
 

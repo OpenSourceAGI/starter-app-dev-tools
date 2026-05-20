@@ -2,7 +2,8 @@
 
 import type { Root } from 'fumadocs-core/page-tree'
 import { usePathname } from 'next/navigation'
-import type { ReactNode } from 'react'
+import React = require('react')
+type ReactNode = React.ReactNode
 import { cn } from '@/lib/cn'
 import { findPage } from '@/lib/page-tree'
 

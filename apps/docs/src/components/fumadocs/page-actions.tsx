@@ -14,7 +14,9 @@ import {
   ExternalLinkIcon,
   MessageCircleIcon,
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import React = require('react')
+
+const { useMemo, useState } = React
 import { cn } from '@/lib/cn'
 
 const cache = new Map<string, string>()
@@ -72,3 +74,48 @@ export function LLMCopyButton({
 const optionVariants = cva(
   'text-sm p-2 rounded-lg inline-flex items-center gap-2 hover:text-fd-accent-foreground hover:bg-fd-accent [&_svg]:size-4'
 )
+
+export function ViewOptions({
+  markdownUrl,
+  githubUrl,
+}: {
+  markdownUrl: string
+  githubUrl: string
+}) {
+  return (
+    <Popover>
+      <PopoverTrigger
+        className={cn(
+          buttonVariants({
+            color: 'secondary',
+            size: 'sm',
+            className: 'gap-1.5 [&_svg]:size-3.5 [&_svg]:text-fd-muted-foreground',
+          })
+        )}
+      >
+        View
+        <ChevronDown />
+      </PopoverTrigger>
+      <PopoverContent className='flex flex-col p-1 w-44'>
+        <a
+          href={markdownUrl}
+          target='_blank'
+          rel='noopener noreferrer'
+          className={optionVariants()}
+        >
+          <ExternalLinkIcon />
+          Raw Markdown
+        </a>
+        <a
+          href={githubUrl}
+          target='_blank'
+          rel='noopener noreferrer'
+          className={optionVariants()}
+        >
+          <ExternalLinkIcon />
+          Open on GitHub
+        </a>
+      </PopoverContent>
+    </Popover>
+  )
+}

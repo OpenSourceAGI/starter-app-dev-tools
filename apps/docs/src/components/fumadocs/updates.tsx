@@ -1,6 +1,7 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import React = require('react')
+type ReactNode = React.ReactNode
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/cn'
 

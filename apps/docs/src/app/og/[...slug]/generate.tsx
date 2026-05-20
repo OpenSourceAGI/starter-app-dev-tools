@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import type { ImageResponseOptions } from '@takumi-rs/image-response'
-import type { ReactNode } from 'react'
+import React = require('react')
+type ReactNode = React.ReactNode
 import { title as siteName } from '@/lib/layout.shared'
 
 export interface GenerateProps {

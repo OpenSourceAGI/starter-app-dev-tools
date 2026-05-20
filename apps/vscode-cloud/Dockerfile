@@ -102,9 +102,10 @@ RUN for ext in \
     # AI assistants
     saoudrizwan.claude-dev \
     # Git
-    eamodio.gitlens \
     # Formatting & linting
     esbenp.prettier-vscode \
+    Anthropic.claude-code \
+    OpenAI.codex \
     dbaeumer.vscode-eslint \
     editorconfig.editorconfig \
     streetsidesoftware.code-spell-checker \
@@ -114,31 +115,23 @@ RUN for ext in \
     # JavaScript / TypeScript
     ms-vscode.vscode-typescript-next \
     # Go
-    golang.Go \
     # Rust
     rust-lang.rust-analyzer \
-    # Java
-    redhat.java \
-    vscjava.vscode-maven \
-    vscjava.vscode-gradle \
     # Web
     bradlc.vscode-tailwindcss \
     vue.volar \
     svelte.svelte-vscode \
-    graphql.vscode-graphql \
     # Data / config formats
     redhat.vscode-yaml \
     redhat.vscode-xml \
     tamasfe.even-better-toml \
-    # Docker
-    ms-azuretools.vscode-docker \
     # UX / productivity
     pkief.material-icon-theme \
     usernamehw.errorlens \
     christian-kohler.path-intellisense \
     formulahendry.code-runner \
     # Time tracking
-    WakaTime.vscode-wakatime; \
+    # WakaTime.vscode-wakatime; \
   do \
     code-server --install-extension "$ext" \
       || echo "[docker] Warning: failed to install $ext (non-fatal)"; \

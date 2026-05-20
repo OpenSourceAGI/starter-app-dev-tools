@@ -10,6 +10,7 @@ node_modules
 vite.config.*.timestamp-*
 .cloudflare
 .wrangler
+.vscode/
 .svelte-kit/*
 .source
 bun.lockb

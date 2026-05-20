@@ -10,8 +10,11 @@ import {
   WrenchIcon,
   XCircleIcon,
 } from 'lucide-react'
-import type { ComponentProps, ReactNode } from 'react'
-import { isValidElement } from 'react'
+import React = require('react')
+
+const { isValidElement } = React
+type ComponentProps<T extends keyof React.JSX.IntrinsicElements | React.ComponentType<never>> = React.ComponentProps<T>
+type ReactNode = React.ReactNode
 import { Badge } from '@/components/ui/badge'
 import {
   Collapsible,

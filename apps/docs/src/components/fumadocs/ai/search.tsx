@@ -17,17 +17,11 @@ import {
   X,
   LoaderCircleIcon,
 } from 'lucide-react'
-import {
-  type ComponentProps,
-  createContext,
-  type SyntheticEvent,
-  use,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
+import React = require('react')
+
+const { createContext, use, useEffect, useId, useMemo, useRef, useState } = React
+type ComponentProps<T extends keyof React.JSX.IntrinsicElements | React.ComponentType<never>> = React.ComponentProps<T>
+type SyntheticEvent<T = Element, E = Event> = React.SyntheticEvent<T, E>
 import type { z } from 'zod'
 import {
   Tool,

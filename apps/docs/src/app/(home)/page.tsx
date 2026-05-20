@@ -1,13 +1,14 @@
 "use client"
 
-import { useState, useMemo } from "react"
-import type * as React from "react"
+import React = require("react")
+
+const { useState, useMemo } = React
+type ElementType = React.ElementType
 import { categories } from "./packages-data"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { WebGLShader } from "@/components/ui/web-gl-shader"
-import { ThemeToggle } from "@/components/ui/curtain-theme-toggle"
 import {
   Search,
   Terminal,
@@ -41,14 +42,15 @@ import {
   Sparkles,
   X,
 } from "lucide-react"
+import { SparklesCore } from "@/components/ui/sparkles"
 
-const iconMap: Record<string, React.ElementType> = {
+const iconMap: Record<string, ElementType> = {
   FileText, Server, Code, Cpu, Wand2, Database, Rocket, GitBranch,
   Globe, HardDrive, Smartphone, Palette, Image, Zap, Shield,
   MonitorSmartphone, Layers, BookOpen,
 }
 
-const categoryIconMap: Record<string, React.ElementType> = {
+const categoryIconMap: Record<string, ElementType> = {
   app: AppWindow,
   terminal: Terminal,
   package: Package,
@@ -114,42 +116,58 @@ function PackageCard({
     ember: "hover:border-ember/40",
   }
 
+  const gradientBorder: Record<string, string> = {
+    brand: "from-transparent via-brand/20 to-transparent",
+    teal: "from-transparent via-teal/20 to-transparent",
+    ember: "from-transparent via-ember/20 to-transparent",
+  }
+
   return (
     <div
-      className={`group relative rounded-xl border border-border bg-card p-5 ${isTemplate ? "template-glow" : "card-glow"} ${borderHover[color] ?? ""} animate-fade-up`}
+      className={`group relative rounded-xl border border-border bg-card overflow-hidden transition-all duration-300 ${isTemplate ? "template-glow" : "card-glow"} ${borderHover[color] ?? ""} animate-fade-up hover:shadow-[0_2px_12px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_2px_12px_rgba(255,255,255,0.03)] hover:-translate-y-0.5 will-change-transform`}
       style={{ animationDelay: `${index * 60}ms` }}
     >
-      <div className="flex items-start gap-3">
-        <PackageIcon iconName={pkg.icon} color={color} />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-2">
-            <h3 className="font-semibold text-foreground truncate text-sm">{pkg.name}</h3>
-            <a
-              href={`https://github.com/OpenSourceAGI/appdemo-dev-tools/tree/main/${pkg.path}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-secondary shrink-0"
-              aria-label="View on GitHub"
-            >
-              <ExternalLink className="size-3.5 text-muted-foreground" />
-            </a>
-          </div>
-          <p className="mt-1 text-xs text-muted-foreground leading-relaxed line-clamp-2">
-            {pkg.description}
-          </p>
-        </div>
+      {/* Dot pattern overlay */}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,0,0,0.03)_1px,transparent_1px)] dark:bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[length:4px_4px]" />
       </div>
-      <div className="mt-3 flex flex-wrap gap-1.5">
-        {pkg.commands.map((cmd, idx) => (
-          <div
-            key={idx}
-            className="flex items-center gap-1 rounded-md bg-secondary/70 px-2 py-0.5 font-mono text-[11px] text-muted-foreground"
-          >
-            <span className="text-foreground/60">$</span>
-            <span className="truncate max-w-[180px]">{cmd}</span>
-            <CopyButton text={cmd} />
+
+      {/* Gradient border overlay */}
+      <div className={`absolute inset-0 -z-10 rounded-xl p-px bg-gradient-to-br ${gradientBorder[color] ?? gradientBorder.brand} opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none`} />
+
+      <div className="relative p-5">
+        <div className="flex items-start gap-3">
+          <PackageIcon iconName={pkg.icon} color={color} />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="font-semibold text-foreground truncate text-sm">{pkg.name}</h3>
+              <a
+                href={`https://github.com/OpenSourceAGI/appdemo-dev-tools/tree/main/${pkg.path}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-secondary shrink-0"
+                aria-label="View on GitHub"
+              >
+                <ExternalLink className="size-3.5 text-muted-foreground" />
+              </a>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground leading-relaxed line-clamp-2">
+              {pkg.description}
+            </p>
           </div>
-        ))}
+        </div>
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {pkg.commands.map((cmd, idx) => (
+            <div
+              key={idx}
+              className="flex items-center gap-1 rounded-md bg-secondary/70 px-2 py-0.5 font-mono text-[11px] text-muted-foreground transition-colors duration-200 group-hover:bg-secondary"
+            >
+              <span className="text-foreground/60">$</span>
+              <span className="truncate max-w-[180px]">{cmd}</span>
+              <CopyButton text={cmd} />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )
@@ -406,7 +424,6 @@ export default function DocsHomepage() {
             <span className="font-bold text-foreground">DevTools</span>
           </div>
           <nav className="flex items-center gap-5">
-            <ThemeToggle variant="icon" buttonSize={32} duration={550} />
             <a
               href="https://starterdocs.vtempest.workers.dev"
               target="_blank"
@@ -440,7 +457,7 @@ export default function DocsHomepage() {
       <section className="relative overflow-hidden border-b border-border">
         {/* WebGL Shader Background */}
         <WebGLShader className="absolute inset-0 opacity-60" />
-
+        
         {/* Animated background overlays */}
         <div className="absolute inset-0 hero-grid" />
         <div className="absolute top-1/4 -left-32 size-96 rounded-full bg-brand/8 blur-[100px] orb-1" />
@@ -464,9 +481,29 @@ export default function DocsHomepage() {
 
             <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-7xl text-balance hero-glow">
               Developer Tools
-              <br />
-              <span className="text-muted-foreground">Documentation</span>
             </h1>
+            
+            {/* Sparkles effect under title */}
+            <div className="w-full max-w-xl mx-auto h-20 relative mt-2">
+              {/* Gradients */}
+              <div className="absolute inset-x-20 top-0 bg-gradient-to-r from-transparent via-brand to-transparent h-[2px] w-3/4 blur-sm" />
+              <div className="absolute inset-x-20 top-0 bg-gradient-to-r from-transparent via-brand to-transparent h-px w-3/4" />
+              <div className="absolute inset-x-60 top-0 bg-gradient-to-r from-transparent via-teal to-transparent h-[5px] w-1/4 blur-sm" />
+              <div className="absolute inset-x-60 top-0 bg-gradient-to-r from-transparent via-teal to-transparent h-px w-1/4" />
+
+              {/* Core sparkles component */}
+              <SparklesCore
+                background="transparent"
+                minSize={0.4}
+                maxSize={1}
+                particleDensity={1200}
+                className="w-full h-full"
+                particleColor="#FFFFFF"
+              />
+
+              {/* Radial Gradient to prevent sharp edges */}
+              <div className="absolute inset-0 w-full h-full [mask-image:radial-gradient(350px_200px_at_top,transparent_20%,white)]" style={{ backgroundColor: 'var(--background)' }}></div>
+            </div>
             <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground leading-relaxed">
               Comprehensive docs for CLI tools, libraries, apps, and
               production-ready starter templates. Jumpstart your development.
@@ -544,10 +581,11 @@ export default function DocsHomepage() {
             <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={() => setActiveFilter(null)}
-                className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium border transition-colors ${activeFilter === null
+                className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
+                  activeFilter === null
                     ? "border-foreground/30 bg-foreground/10 text-foreground"
                     : "border-border bg-secondary/50 text-muted-foreground hover:text-foreground hover:border-foreground/20"
-                  }`}
+                }`}
               >
                 All
               </button>
@@ -565,10 +603,11 @@ export default function DocsHomepage() {
                     onClick={() =>
                       setActiveFilter(isActive ? null : cat.name)
                     }
-                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium border transition-colors ${isActive
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
+                      isActive
                         ? activeColor[cat.color] ?? ""
                         : "border-border bg-secondary/50 text-muted-foreground hover:text-foreground hover:border-foreground/20"
-                      }`}
+                    }`}
                   >
                     <CatIcon className="size-3" />
                     {cat.name}

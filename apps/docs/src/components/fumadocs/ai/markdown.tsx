@@ -2,15 +2,12 @@ import { DynamicCodeBlock } from 'fumadocs-ui/components/dynamic-codeblock'
 import defaultMdxComponents from 'fumadocs-ui/mdx'
 import type { ElementContent, Root, RootContent } from 'hast'
 import { toJsxRuntime } from 'hast-util-to-jsx-runtime'
-import {
-  Children,
-  type ComponentProps,
-  type ReactElement,
-  type ReactNode,
-  Suspense,
-  use,
-  useDeferredValue,
-} from 'react'
+import React = require('react')
+
+const { Children, Suspense, use, useDeferredValue } = React
+type ComponentProps<T extends keyof React.JSX.IntrinsicElements | React.ComponentType<never>> = React.ComponentProps<T>
+type ReactElement = React.ReactElement
+type ReactNode = React.ReactNode
 import { Fragment, jsx, jsxs } from 'react/jsx-runtime'
 import { remark } from 'remark'
 import remarkGfm from 'remark-gfm'

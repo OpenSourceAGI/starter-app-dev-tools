@@ -1,5 +1,6 @@
 import Link from 'fumadocs-core/link'
-import type { ComponentProps } from 'react'
+import React = require('react')
+type ComponentProps<T extends keyof React.JSX.IntrinsicElements | React.ComponentType<never>> = React.ComponentProps<T>
 import type { z } from 'zod'
 import type { ProvideLinksToolSchema } from '@/lib/ai/qa-schema'
 import { cn } from '@/lib/cn'
