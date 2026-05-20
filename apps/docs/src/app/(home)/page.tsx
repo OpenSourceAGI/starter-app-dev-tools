@@ -1,10 +1,13 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { categories } from "@/lib/packages-data"
+import type * as React from "react"
+import { categories } from "./packages-data"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { WebGLShader } from "@/components/ui/web-gl-shader"
+import { ThemeToggle } from "@/components/ui/curtain-theme-toggle"
 import {
   Search,
   Terminal,
@@ -360,7 +363,7 @@ function StarterTemplatesSection({ searchQuery }: { searchQuery: string }) {
   )
 }
 
-export function DocsHomepage() {
+export default function DocsHomepage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [activeFilter, setActiveFilter] = useState<string | null>(null)
 
@@ -403,6 +406,7 @@ export function DocsHomepage() {
             <span className="font-bold text-foreground">DevTools</span>
           </div>
           <nav className="flex items-center gap-5">
+            <ThemeToggle variant="icon" buttonSize={32} duration={550} />
             <a
               href="https://starterdocs.vtempest.workers.dev"
               target="_blank"
@@ -434,7 +438,10 @@ export function DocsHomepage() {
 
       {/* Hero Section */}
       <section className="relative overflow-hidden border-b border-border">
-        {/* Animated background */}
+        {/* WebGL Shader Background */}
+        <WebGLShader className="absolute inset-0 opacity-60" />
+
+        {/* Animated background overlays */}
         <div className="absolute inset-0 hero-grid" />
         <div className="absolute top-1/4 -left-32 size-96 rounded-full bg-brand/8 blur-[100px] orb-1" />
         <div className="absolute bottom-1/4 -right-32 size-96 rounded-full bg-teal/8 blur-[100px] orb-2" />
