@@ -33,8 +33,8 @@ export async function handleAuthRoutes(
 ): Promise<Response | null> {
   if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET || !env.SESSION_STORE) return null;
 
-  // ── /auth/login — redirect to Google consent screen ──────────────────────
-  if (url.pathname === "/auth/login") {
+  // ── /auth/login — redirect to Google consent screen ─────────────────────
+  if (url.pathname === "/auth/login" && request.method === "GET") {
     const params = new URLSearchParams({
       client_id: env.GOOGLE_CLIENT_ID,
       redirect_uri: `${url.origin}/auth/callback`,
@@ -87,6 +87,7 @@ export async function handleAuthRoutes(
       { expirationTtl: ttl }
     );
 
+    // Redirect to / — the Worker proxies straight to code-server (no password page needed).
     return new Response(null, {
       status: 302,
       headers: {
@@ -128,7 +129,7 @@ export async function authenticate(
     return authenticateViaAccess(request, env);
   }
 
-  if (env.GOOGLE_CLIENT_ID && env.SESSION_STORE) {
+  if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.SESSION_STORE) {
     return authenticateViaGoogleSession(request, env);
   }
 

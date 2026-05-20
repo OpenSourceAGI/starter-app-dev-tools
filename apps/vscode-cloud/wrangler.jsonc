@@ -6,6 +6,9 @@
   "compatibility_flags": ["nodejs_compat"],
 
   // ── Container definition ──────────────────────────────────────────────────
+  // FUSE (/dev/fuse) is available in Cloudflare Containers by default since 2025-11-21.
+  // Internet access is enabled at the class level via `enableInternet = true` so the
+  // container can reach the R2 S3-compat endpoint and github.com.
   "containers": [
     {
       "class_name": "CodeServerContainer",
@@ -36,6 +39,17 @@
     },
   ],
 
+  // ── D1 database — teams, members, invites ────────────────────────────────
+  // Create with: wrangler d1 create vscode-cloud-teams
+  // Then paste the returned database_id below.
+  "d1_databases": [
+    {
+      "binding": "TEAMS_DB",
+      "database_name": "vscode-cloud-teams",
+      "database_id": "10349099-02ed-447b-b4a2-b096c4c04c5d",  // paste the ID returned by `wrangler d1 create vscode-cloud-teams`
+    },
+  ],
+
   // ── KV namespace — Google OAuth sessions ─────────────────────────────────
   // Only needed when using Google OAuth (option B auth).
   // Create with: wrangler kv namespace create SESSION_STORE
@@ -43,7 +57,7 @@
   "kv_namespaces": [
     {
       "binding": "SESSION_STORE",
-      "id": "",  // paste your KV namespace ID here after running the command above
+      "id": "b70d3fd540204ba0b92a34309ab4b94e",  // paste your KV namespace ID here after running the command above
     },
   ],
 
@@ -70,6 +84,17 @@
     // ── R2 bucket name ────────────────────────────────────────────────────────
     "R2_BUCKET_NAME": "vscode-cloud-workspaces",
 
+    // ── Teams & admin ─────────────────────────────────────────────────────────
+    // Comma-separated emails with platform-wide admin access to /admin.
+    // Any authenticated user can also access /admin for teams they belong to.
+    "ADMIN_EMAILS": "",
+
+    // ── WakaTime (optional) ───────────────────────────────────────────────────
+    // If set, auto-writes ~/.wakatime.cfg in every container so users don't
+    // need to configure their API key manually.
+    // Get your key at wakatime.com/settings/account (or use a team API key).
+    "WAKATIME_API_KEY": "",
+
     // ── GitHub repo auto-cloning ──────────────────────────────────────────────
     // Comma-separated "owner/repo" pairs cloned into /workspace on container start.
     // Example: "myorg/frontend,myorg/api"
@@ -86,21 +111,33 @@
     },
   ],
 
+  // ── Observability ─────────────────────────────────────────────────────────
+  // Enables Cloudflare Workers Observability: logs, traces, and metrics visible
+  // in the Cloudflare dashboard under Workers & Pages → your worker → Observability.
+  // head_sampling_rate: fraction of requests to trace (1 = 100%, 0.1 = 10%).
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+  },
+
   // ── Secrets (set via CLI, never committed) ────────────────────────────────
-  // R2 credentials for FUSE mount (geesefs inside the container):
+  // Auth is handled by the Worker — code-server runs with --auth none.
+  //
+  // R2 credentials (FUSE mount inside container):
   //   wrangler secret put R2_ACCESS_KEY_ID
   //   wrangler secret put R2_SECRET_ACCESS_KEY
   //   wrangler secret put R2_ACCOUNT_ID
   //
-  // Google OAuth (if using auth option B):
+  // Google OAuth:
   //   wrangler secret put GOOGLE_CLIENT_SECRET
   //
-  // GitHub (if cloning private repos via GITHUB_REPOS):
+  // GitHub (private repos):
   //   wrangler secret put GITHUB_TOKEN
   //
   // Initial setup:
   //   wrangler login
   //   wrangler r2 bucket create vscode-cloud-workspaces
-  //   wrangler kv namespace create SESSION_STORE   # only if using Google OAuth
+  //   wrangler d1 create vscode-cloud-teams        # paste database_id above
+  //   wrangler kv namespace create SESSION_STORE   # paste id in kv_namespaces above
   //   wrangler deploy
 }
