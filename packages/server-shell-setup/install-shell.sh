@@ -718,32 +718,26 @@ install_systeminfo() {
     print_header "Installing System Info Greeting"
     print_msg "$YELLOW" "Setting up a system information display on shell login"
 
-    if [ "$ENV" = "dev" ]; then
-        wget http://192.168.42.97:8000/systeminfo.sh -O ~/.config/systeminfo.sh
-    else
-        wget https://raw.githubusercontent.com/vtempest/server-shell-setup/refs/heads/master/systeminfo.sh -O ~/.config/systeminfo.sh
-    fi
-    chmod +x ~/.config/systeminfo.sh
 
     echo 'set -U fish_greeting ""' >>~/.config/fish/config.fish
 
     # Add to bash if not already there
-    if ! grep -q "bash ~/.config/systeminfo.sh" ~/.bashrc; then
-        echo "bash ~/.config/systeminfo.sh" >>~/.bashrc
+    if ! grep -q "npx about-system@latest" ~/.bashrc; then
+        echo "npx about-system@latest" >>~/.bashrc
     fi
 
     # Add to fish if config exists and line not already present
     if [ -f "$HOME/.config/fish/config.fish" ]; then
-        if ! grep -q "bash ~/.config/systeminfo.sh" ~/.config/fish/config.fish; then
+        if ! grep -q "npx about-system@latest" ~/.config/fish/config.fish; then
             echo 'set -U fish_greeting ""' >>~/.config/fish/config.fish
-            echo "bash ~/.config/systeminfo.sh" >>~/.config/fish/config.fish
+            echo "npx about-system@latest" >>~/.config/fish/config.fish
         fi
     fi
     # Add to nushell if config exists
     if [ -f "$HOME/.config/nushell/config.nu" ]; then
-        if ! grep -q "bash ~/.config/systeminfo.sh" ~/.config/nushell/config.nu; then
+        if ! grep -q "npx about-system@latest" ~/.config/nushell/config.nu; then
             echo '$env.config.show_banner = false' >>~/.config/nushell/config.nu
-            echo "bash ~/.config/systeminfo.sh" >>~/.config/nushell/config.nu
+            echo "npx about-system@latest" >>~/.config/nushell/config.nu
         fi
     fi
 
