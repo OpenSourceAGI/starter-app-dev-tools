@@ -101,11 +101,10 @@ USER coder
 RUN for ext in \
     # AI assistants
     saoudrizwan.claude-dev \
-    # Git
     # Formatting & linting
     esbenp.prettier-vscode \
-    Anthropic.claude-code \
-    OpenAI.codex \
+    anthropic.claude-code \
+    openai.chatgpt \
     dbaeumer.vscode-eslint \
     editorconfig.editorconfig \
     streetsidesoftware.code-spell-checker \
@@ -129,7 +128,7 @@ RUN for ext in \
     pkief.material-icon-theme \
     usernamehw.errorlens \
     christian-kohler.path-intellisense \
-    formulahendry.code-runner \
+    formulahendry.code-runner; \
     # Time tracking
     # WakaTime.vscode-wakatime; \
   do \
