@@ -1,4 +1,4 @@
-.theme-modern-minimal.light {
+.theme-minimal.light {
   --background: #ffffff;
   --foreground: #333333;
   --card: #ffffff;
@@ -37,7 +37,7 @@
   --font-mono: JetBrains Mono, monospace;
 }
 
-.theme-modern-minimal.dark {
+.theme-minimal.dark {
   --background: #171717;
   --foreground: #e5e5e5;
   --card: #262626;
@@ -73,7 +73,7 @@
   --sidebar-ring: #3b82f6;
 }
 
-.theme-pink-lemonade.light {
+.theme-lemonade.light {
   --background: #faf5fa;
   --foreground: #501854;
   --card: #faf5fa;
@@ -109,7 +109,7 @@
   --radius: 0.5rem;
 }
 
-.theme-pink-lemonade.dark {
+.theme-lemonade.dark {
   --background: #221d27;
   --foreground: #d2c4de;
   --card: #2c2632;
@@ -225,7 +225,7 @@
   --shadow-color: rgba(29, 161, 242, 0.25);
 }
 
-.theme-mocha-mousse.light {
+.theme-mocha.light {
   --background: #f1f0e5;
   --foreground: #56453f;
   --card: #f1f0e5;
@@ -270,7 +270,7 @@
   --shadow-offset-y: 2px;
 }
 
-.theme-mocha-mousse.dark {
+.theme-mocha.dark {
   --background: #2d2521;
   --foreground: #f1f0e5;
   --card: #3c332e;
@@ -390,7 +390,7 @@
   --shadow-color: #324859;
 }
 
-.theme-amethyst-haze.light {
+.theme-amethyst.light {
   --background: #f8f7fa;
   --foreground: #3d3c4f;
   --card: #ffffff;
@@ -437,7 +437,7 @@
   --spacing: 0.25rem;
 }
 
-.theme-amethyst-haze.dark {
+.theme-amethyst.dark {
   --background: #1a1823;
   --foreground: #e0ddef;
   --card: #232030;
@@ -566,7 +566,7 @@
   --spacing: 0.25rem;
 }
 
-.theme-doom-64.light {
+.theme-doom64.light {
   --background: #cccccc;
   --foreground: #1f1f1f;
   --card: #b0b0b0;
@@ -613,7 +613,7 @@
   --spacing: 0.25rem;
 }
 
-.theme-doom-64.dark {
+.theme-doom64.dark {
   --background: #1a1a1a;
   --foreground: #e0e0e0;
   --card: #2a2a2a;
@@ -913,7 +913,7 @@
   --shadow-offset-y: 1px;
 }
 
-.theme-kodama-grove.light {
+.theme-kodama.light {
   --background: #e4d7b0;
   --foreground: #5c4b3e;
   --card: #e7dbbf;
@@ -958,7 +958,7 @@
   --shadow-offset-y: 3px;
 }
 
-.theme-kodama-grove.dark {
+.theme-kodama.dark {
   --background: #3a3529;
   --foreground: #ede4d4;
   --card: #413c33;
@@ -993,7 +993,7 @@
   --sidebar-ring: #8a9f7b;
 }
 
-.theme-cosmic-night.light {
+.theme-cosmic.light {
   --background: #f5f5ff;
   --foreground: #2a2a4a;
   --card: #ffffff;
@@ -1038,7 +1038,7 @@
   --shadow-offset-y: 4px;
 }
 
-.theme-cosmic-night.dark {
+.theme-cosmic.dark {
   --background: #0f0f1a;
   --foreground: #e2e2f5;
   --card: #1a1a2e;
@@ -1154,7 +1154,7 @@
   --sidebar-ring: #e05d38;
 }
 
-.theme-quantum-rose.light {
+.theme-quantum.light {
   --background: #fff0f8;
   --foreground: #91185c;
   --card: #fff7fc;
@@ -1199,7 +1199,7 @@
   --shadow-offset-y: 3px;
 }
 
-.theme-quantum-rose.dark {
+.theme-quantum.dark {
   --background: #1a0922;
   --foreground: #ffb3ff;
   --card: #2a1435;
@@ -1313,7 +1313,7 @@
   --sidebar-ring: #4caf50;
 }
 
-.theme-bold-tech.light {
+.theme-boldtech.light {
   --background: #ffffff;
   --foreground: #312e81;
   --card: #ffffff;
@@ -1358,7 +1358,7 @@
   --shadow-offset-y: 2px;
 }
 
-.theme-bold-tech.dark {
+.theme-boldtech.dark {
   --background: #0f172a;
   --foreground: #e0e7ff;
   --card: #1e1b4b;
@@ -1394,7 +1394,7 @@
   --sidebar-ring: #8b5cf6;
 }
 
-.theme-elegant-luxury.light {
+.theme-luxury.light {
   --background: #faf7f5;
   --foreground: #1a1a1a;
   --card: #faf7f5;
@@ -1439,7 +1439,7 @@
   --shadow-offset-y: 1px;
 }
 
-.theme-elegant-luxury.dark {
+.theme-luxury.dark {
   --background: #1c1917;
   --foreground: #f5f5f4;
   --card: #292524;
@@ -1475,7 +1475,7 @@
   --sidebar-ring: #b91c1c;
 }
 
-.theme-amber-minimal.light {
+.theme-ambermin.light {
   --background: #ffffff;
   --foreground: #262626;
   --card: #ffffff;
@@ -1522,7 +1522,7 @@
   --spacing: 0.25rem;
 }
 
-.theme-amber-minimal.dark {
+.theme-ambermin.dark {
   --background: #171717;
   --foreground: #e5e5e5;
   --card: #262626;
@@ -1638,7 +1638,7 @@
   --sidebar-ring: #4ade80;
 }
 
-.theme-neo-brutalism.light {
+.theme-brutalism.light {
   --background: #ffffff;
   --foreground: #000000;
   --card: #ffffff;
@@ -1682,7 +1682,7 @@
   --shadow-offset-y: 4px;
 }
 
-.theme-neo-brutalism.dark {
+.theme-brutalism.dark {
   --background: #000000;
   --foreground: #ffffff;
   --card: #333333;
@@ -1718,7 +1718,7 @@
   --sidebar-ring: #ff6666;
 }
 
-.theme-solar-dusk.light {
+.theme-solardusk.light {
   --background: #fdfbf7;
   --foreground: #4a3b33;
   --card: #f8f4ee;
@@ -1763,7 +1763,7 @@
   --shadow-offset-y: 2px;
 }
 
-.theme-solar-dusk.dark {
+.theme-solardusk.dark {
   --background: #1c1917;
   --foreground: #f5f5f4;
   --card: #292524;
@@ -1962,7 +1962,7 @@
   --sidebar-ring: #ff00c8;
 }
 
-.theme-pastel-dreams.light {
+.theme-pastel.light {
   --background: #f7f3f9;
   --foreground: #374151;
   --card: #ffffff;
@@ -2007,7 +2007,7 @@
   --shadow-offset-y: 8px;
 }
 
-.theme-pastel-dreams.dark {
+.theme-pastel.dark {
   --background: #1c1917;
   --foreground: #e0e7ff;
   --card: #2d2535;
@@ -2043,7 +2043,7 @@
   --sidebar-ring: #c0aafd;
 }
 
-.theme-clean-slate.light {
+.theme-cleanslate.light {
   --background: #f8fafc;
   --foreground: #1e293b;
   --card: #ffffff;
@@ -2088,7 +2088,7 @@
   --shadow-offset-y: 4px;
 }
 
-.theme-clean-slate.dark {
+.theme-cleanslate.dark {
   --background: #0f172a;
   --foreground: #e2e8f0;
   --card: #1e293b;
@@ -2196,7 +2196,7 @@
   --radius: 0.5rem;
 }
 
-.theme-ocean-breeze.light {
+.theme-breeze.light {
   --background: #f0f8ff;
   --foreground: #374151;
   --card: #ffffff;
@@ -2241,7 +2241,7 @@
   --shadow-offset-y: 4px;
 }
 
-.theme-ocean-breeze.dark {
+.theme-breeze.dark {
   --background: #0f172a;
   --foreground: #d1d5db;
   --card: #1e293b;
@@ -2277,7 +2277,7 @@
   --sidebar-ring: #34d399;
 }
 
-.theme-retro-arcade.light {
+.theme-retro.light {
   --background: #fdf6e3;
   --foreground: #073642;
   --card: #eee8d5;
@@ -2321,7 +2321,7 @@
   --shadow-offset-y: 2px;
 }
 
-.theme-retro-arcade.dark {
+.theme-retro.dark {
   --background: #002b36;
   --foreground: #93a1a1;
   --card: #073642;
@@ -2357,7 +2357,7 @@
   --sidebar-ring: #d33682;
 }
 
-.theme-midnight-bloom.light {
+.theme-bloom.light {
   --background: #f9f9f9;
   --foreground: #333333;
   --card: #ffffff;
@@ -2402,7 +2402,7 @@
   --shadow-offset-y: 5px;
 }
 
-.theme-midnight-bloom.dark {
+.theme-bloom.dark {
   --background: #1a1d23;
   --foreground: #e5e5e5;
   --card: #2f3436;
@@ -2512,7 +2512,7 @@
   --sidebar-ring: #ff99cc;
 }
 
-.theme-northern-lights.light {
+.theme-aurora.light {
   --background: #f9f9fa;
   --foreground: #333333;
   --card: #ffffff;
@@ -2551,7 +2551,7 @@
   --font-mono: JetBrains Mono, monospace;
 }
 
-.theme-northern-lights.dark {
+.theme-aurora.dark {
   --background: #1a1d23;
   --foreground: #e5e5e5;
   --card: #2f3436;
@@ -2587,7 +2587,7 @@
   --sidebar-ring: #34a85a;
 }
 
-.theme-vintage-paper.light {
+.theme-vintage.light {
   --background: #f5f1e6;
   --foreground: #4a3f35;
   --card: #fffcf5;
@@ -2632,7 +2632,7 @@
   --shadow-offset-y: 3px;
 }
 
-.theme-vintage-paper.dark {
+.theme-vintage.dark {
   --background: #2d2621;
   --foreground: #ece5d8;
   --card: #3a322c;
@@ -2668,7 +2668,7 @@
   --sidebar-ring: #c0a080;
 }
 
-.theme-sunset-horizon.light {
+.theme-horizon.light {
   --background: #fff9f5;
   --foreground: #3d3436;
   --card: #ffffff;
@@ -2713,7 +2713,7 @@
   --shadow-offset-y: 6px;
 }
 
-.theme-sunset-horizon.dark {
+.theme-horizon.dark {
   --background: #2a2024;
   --foreground: #f2e9e4;
   --card: #392f35;
@@ -2749,7 +2749,7 @@
   --sidebar-ring: #ff7e5f;
 }
 
-.theme-starry-night.light {
+.theme-starry.light {
   --background: #f5f7fa;
   --foreground: #1a2238;
   --card: #e3eaf2;
@@ -2786,7 +2786,7 @@
   --radius: 0.5rem;
 }
 
-.theme-starry-night.dark {
+.theme-starry.dark {
   --background: #181a24;
   --foreground: #e6eaf3;
   --card: #23243a;

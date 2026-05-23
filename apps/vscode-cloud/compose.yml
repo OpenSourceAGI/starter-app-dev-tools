@@ -1,0 +1,57 @@
+services:
+  code-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SUDO_PASSWORD: ${SUDO_PASSWORD:-coder}
+    ports:
+      - "${PORT:-8080}:8080"
+
+    # FUSE is required for geesefs R2 mounts.
+    # When R2 vars are not set the entrypoint falls back to a local volume.
+    cap_add:
+      - SYS_ADMIN
+    devices:
+      - /dev/fuse:/dev/fuse
+    security_opt:
+      - apparmor:unconfined
+
+    environment:
+      # ── Identity ──────────────────────────────────────────────────────────
+      # Becomes the per-user R2 prefix: users/<USER_ID>/
+      USER_ID: ${USER_ID:-dev}
+
+      # ── R2 workspace persistence (optional) ───────────────────────────────
+      # Leave all four blank to use the local volume below instead.
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:-}
+      R2_BUCKET_NAME: ${R2_BUCKET_NAME:-vscode-cloud-workspaces}
+
+      # ── GitHub auto-clone (optional) ──────────────────────────────────────
+      GITHUB_REPOS: ${GITHUB_REPOS:-}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+
+      # ── WakaTime (optional) ───────────────────────────────────────────────
+      WAKATIME_API_KEY: ${WAKATIME_API_KEY:-}
+
+    volumes:
+      # Persist the workspace locally when R2 is not configured.
+      # geesefs will mount over this directory when R2 vars ARE set.
+      - workspace:/home/coder/workspace
+
+      # Persist VS Code user settings across container rebuilds.
+      - vscode-user-data:/home/coder/.local/share/code-server/User
+
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+
+volumes:
+  workspace:
+  vscode-user-data:

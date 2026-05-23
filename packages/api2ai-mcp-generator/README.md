@@ -27,6 +27,7 @@ OpenAPI specs are easy to write and organize your code and have [100s of tools a
 - 🎨 **UI Widgets** - Compatible with ChatGPT Apps SDK and MCP-UI
 - 🔐 **Auth Support** - Bearer tokens, API keys, custom headers
 - ✨ **Zod Schemas** - Type-safe parameter validation
+- 🛡️ **Security Hardening** - Risk classification, policy enforcement, HTTP guardrails
 - 🐳 **Production Ready** - Docker, PM2, and Kubernetes ready
 
 ## Quick Start
@@ -54,10 +55,14 @@ Open http://localhost:3000/inspector to test your tools!
 node generate-mcp-use-server.js <openapi-spec> [output-folder] [options]
 
 Options:
-  --name <name>      Server name (default: api-mcp-server)
-  --base-url <url>   Override API base URL
-  --port <port>      Server port (default: 3000)
-  --help             Show help
+  --name <name>            Server name (default: api-mcp-server)
+  --base-url <url>         Override API base URL
+  --port <port>            Server port (default: 3000)
+  --allow-mutations        Enable POST/PUT/PATCH/DELETE tools by default
+  --include-tags <tags>    Only include tools with these tags (comma-separated)
+  --exclude-tags <tags>    Exclude tools with these tags (comma-separated)
+  --approve-writes         Disable approval requirement for restricted tools
+  --help                   Show help
 ```
 
 ### Examples
@@ -80,6 +85,20 @@ node generate-mcp-use-server.js \
   ./petstore.json \
   ./petstore \
   --base-url https://petstore.example.com/v3
+
+# Include only read-only tools tagged "public"
+node generate-mcp-use-server.js \
+  ./api.json \
+  ./readonly-server \
+  --include-tags public \
+  --exclude-tags admin,internal
+
+# Enable writes (mutations) explicitly
+node generate-mcp-use-server.js \
+  ./api.json \
+  ./full-server \
+  --allow-mutations \
+  --approve-writes
 ```
 
 ### Programmatic Usage
@@ -95,6 +114,9 @@ const result = await generateMcpServer(
     serverName: 'my-api',
     baseUrl: 'https://api.example.com/v1',
     port: 3000,
+    allowMutations: false,       // block POST/PUT/PATCH/DELETE by default
+    includeTags: ['public'],     // only include tools tagged "public"
+    excludeTags: ['admin'],      // exclude tools tagged "admin"
   }
 );
 
@@ -103,10 +125,47 @@ console.log(`Generated ${result.toolCount} tools`);
 // Or just extract tools for custom processing
 const spec = await loadOpenApiSpec('./my-spec.json');
 const tools = extractTools(spec, {
-  filterFn: (tool) => tool.method === 'get',  // Only GET endpoints
-  excludeOperationIds: ['deleteUser'],        // Exclude specific operations
+  filterFn: (tool) => tool.riskLevel === 'low',  // only safe read-only tools
+  excludeOperationIds: ['deleteUser'],
 });
 ```
+
+## Security
+
+The generator enforces a three-layer security model in every generated server.
+
+### Layer 1 — Generation-time risk classification
+
+Every tool is classified during generation and the result is baked into `src/tools-config.js`:
+
+| Risk level | When assigned | Default behavior |
+|------------|---------------|------------------|
+| `low` | `GET`, `HEAD`, `OPTIONS` with no dangerous keywords | Enabled, no approval required |
+| `medium` | Any mutating method (`POST`, `PUT`, `PATCH`, `DELETE`) | Blocked unless `ALLOW_RESTRICTED_TOOLS=true` |
+| `high` | Any operation matching admin, auth, billing, payments, tokens, secrets, user management patterns | Blocked, approval required |
+
+Use `--allow-mutations` at generation time to promote medium-risk tools to enabled-by-default, or override at runtime with env vars.
+
+### Layer 2 — Runtime policy enforcement
+
+`checkToolPolicy()` runs before every outbound API call, reading env vars at call-time so you can change policy without regenerating:
+
+```
+ALLOW_RESTRICTED_TOOLS=true    # unlock medium/high-risk tools
+REQUIRE_APPROVALS=false        # bypass per-call approval gate
+```
+
+### Layer 3 — HTTP hardening
+
+The generated HTTP client enforces these on every request:
+
+- **Timeouts** — configurable via `REQUEST_TIMEOUT_MS` (default 30 s)
+- **Response size cap** — configurable via `MAX_RESPONSE_BYTES` (default 10 MB)
+- **No redirects** — `redirect: 'error'` prevents host-pivot attacks
+- **Credential header protection** — tool arguments cannot override `Authorization`, `Cookie`, `X-API-Key`, or other credential headers; env-configured auth always wins
+- **Host allowlist** — `ALLOWED_API_HOSTS` restricts outbound calls to specific hostnames
+
+> **Inspector note**: The built-in inspector at `/inspector` exposes all registered tools. In production, restrict access using a reverse proxy or firewall rule.
 
 ## Generated Output
 
@@ -118,9 +177,10 @@ my-mcp-server/
 ├── package.json
 ├── README.md         # Generated documentation
 └── src/
-    ├── index.js      # Main server with tool registrations
-    ├── http-client.js # HTTP utilities
-    └── tools-config.js # Tool configurations
+    ├── index.js        # Main server with tool registrations
+    ├── http-client.js  # Hardened HTTP client
+    ├── tools-config.js # Tool configurations with risk metadata
+    └── policy.js       # Runtime security policy
 ```
 
 ## Generated Server Features
@@ -136,22 +196,46 @@ my-mcp-server/
 
 ### Environment Variables
 
-| Variable | Description |
-|----------|-------------|
-| `PORT` | Server port |
-| `NODE_ENV` | development/production |
-| `API_BASE_URL` | Base URL for API calls |
-| `API_KEY` | Bearer token auth |
-| `API_AUTH_HEADER` | Custom header (`Name:value`) |
-| `MCP_URL` | Public URL for widgets |
-| `ALLOWED_ORIGINS` | CORS origins (production) |
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PORT` | Server port | `3000` |
+| `NODE_ENV` | `development` / `production` | `development` |
+| `API_BASE_URL` | Base URL for API calls | From spec |
+| `API_KEY` | Bearer token auth | — |
+| `API_AUTH_HEADER` | Custom header (`Name:value`) | — |
+| `MCP_URL` | Public URL for widgets | — |
+| `ALLOWED_ORIGINS` | CORS origins (production) | — |
+| `ALLOW_RESTRICTED_TOOLS` | Allow medium/high-risk tools | `false` |
+| `REQUIRE_APPROVALS` | Require approval for restricted tools | `true` |
+| `ALLOWED_API_HOSTS` | Comma-separated allowed API hostnames | (spec's host) |
+| `REQUEST_TIMEOUT_MS` | Outbound request timeout in ms | `30000` |
+| `MAX_RESPONSE_BYTES` | Maximum response body size in bytes | `10485760` |
 
+### Connect to Claude Desktop
+
+```json
+{
+  "mcpServers": {
+    "my-api": {
+      "url": "http://localhost:3000/mcp"
+    }
+  }
+}
+```
 
 ### Connect to ChatGPT
 
 The generated server supports the OpenAI Apps SDK out of the box.
 
 ## Advanced Options
+
+### Filter by risk level
+
+```javascript
+const result = await generateMcpServer(specUrl, outputDir, {
+  filterFn: (tool) => tool.riskLevel === 'low',
+});
+```
 
 ### Filter Tools by Method
 
@@ -186,13 +270,12 @@ const result = await generateMcpServer(specUrl, outputDir, {
 ```javascript
 const result = await generateMcpServer(specUrl, outputDir, {
   excludeOperationIds: ['deleteUser'],
+  allowMutations: false,
   filterFn: (tool) => 
-    tool.method === 'get' && 
+    tool.riskLevel === 'low' && 
     tool.pathTemplate.includes('/public/'),
 });
 ```
-
-
 
 ## Comparison with Raw MCP SDK
 
@@ -203,4 +286,7 @@ const result = await generateMcpServer(specUrl, outputDir, {
 | UI Widgets | ✅ Supported | ❌ Manual |
 | Zod validation | ✅ Generated | ❌ Manual |
 | Authentication | ✅ Configured | ❌ Manual |
+| Risk classification | ✅ Automatic | ❌ Manual |
+| Runtime policy | ✅ Generated | ❌ Manual |
+| HTTP hardening | ✅ Built-in | ❌ Manual |
 | Production ready | ✅ Yes | ⚠️ Requires work |

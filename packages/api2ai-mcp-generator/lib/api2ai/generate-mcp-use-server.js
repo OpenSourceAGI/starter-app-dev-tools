@@ -2,12 +2,12 @@
 
 /**
  * OpenAPI to MCP Server Generator (mcp-use framework)
- * 
+ *
  * Generates a complete MCP server using the mcp-use framework from any OpenAPI spec.
- * 
+ *
  * Usage:
  *   node generate-mcp-use-server.js <openapi-spec> [output-folder] [options]
- * 
+ *
  * Examples:
  *   node generate-mcp-use-server.js ./petstore.json ./my-mcp-server
  *   node generate-mcp-use-server.js https://petstore3.swagger.io/api/v3/openapi.json ./petstore-mcp --base-url https://petstore3.swagger.io/api/v3
@@ -162,10 +162,41 @@ function buildZodSchema(operation, pathParams) {
   return `z.object({\n${properties.join(',\n')}\n  })`;
 }
 
+function classifyRisk(operation, method, pathTemplate) {
+  const tags = operation.tags || [];
+  const haystack = [
+    operation.operationId,
+    operation.summary,
+    operation.description,
+    pathTemplate,
+    ...tags,
+  ].filter(Boolean).join(' ').toLowerCase();
+
+  const isMutation = !['get', 'head', 'options'].includes(method);
+  const dangerousPatterns = [
+    'delete', 'remove', 'destroy', 'purge',
+    'payment', 'payout', 'billing', 'invoice',
+    'admin', 'role', 'permission', 'token', 'secret', 'key',
+    'webhook', 'auth', 'oauth', 'user', 'member',
+  ];
+
+  const matchedDanger = dangerousPatterns.some(p => haystack.includes(p));
+  const riskLevel = matchedDanger ? 'high' : isMutation ? 'medium' : 'low';
+
+  return {
+    tags,
+    isMutation,
+    riskLevel,
+    requiresApproval: riskLevel !== 'low',
+    allowedInInspector: riskLevel === 'low',
+    enabledByDefault: riskLevel === 'low',
+  };
+}
+
 // Extract tools from OpenAPI spec
 function extractTools(spec, options = {}) {
   const tools = [];
-  const { baseUrl: overrideBaseUrl, excludeOperationIds = [], filterFn } = options;
+  const { baseUrl: overrideBaseUrl, excludeOperationIds = [], filterFn, allowMutations = false, includeTags = [], excludeTags = [] } = options;
 
   let baseUrl = overrideBaseUrl;
   if (!baseUrl && spec.servers && spec.servers.length > 0) {
@@ -183,6 +214,18 @@ function extractTools(spec, options = {}) {
         `${method}_${pathTemplate.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
       if (excludeOperationIds.includes(operationId)) continue;
+
+      const risk = classifyRisk(operation, method, pathTemplate);
+
+      // Override enabledByDefault for mutations if allowMutations flag is set
+      if (allowMutations && risk.isMutation && risk.riskLevel === 'medium') {
+        risk.enabledByDefault = true;
+        risk.requiresApproval = false;
+      }
+
+      // Tag-based filtering
+      if (includeTags.length > 0 && !risk.tags.some(t => includeTags.includes(t))) continue;
+      if (excludeTags.length > 0 && risk.tags.some(t => excludeTags.includes(t))) continue;
 
       // Build tool name (sanitized)
       const name = operationId
@@ -219,6 +262,12 @@ function extractTools(spec, options = {}) {
         requestBodyContentType,
         operationId,
         baseUrl,
+        tags: risk.tags,
+        isMutation: risk.isMutation,
+        riskLevel: risk.riskLevel,
+        requiresApproval: risk.requiresApproval,
+        allowedInInspector: risk.allowedInInspector,
+        enabledByDefault: risk.enabledByDefault,
       };
 
       if (filterFn && !filterFn(tool)) continue;
@@ -266,6 +315,18 @@ API_BASE_URL=${baseUrl || 'https://api.example.com'}
 # API_KEY=your-api-key
 # API_AUTH_HEADER=X-Custom-Auth:your-token
 
+# Security — allowed API hosts (comma-separated). Leave empty to allow the spec's host only.
+# ALLOWED_API_HOSTS=api.example.com,api2.example.com
+
+# Tool policy — set to true to allow medium/high-risk (mutating) tools
+ALLOW_RESTRICTED_TOOLS=false
+# Set to false to bypass per-call approval requirement for restricted tools
+REQUIRE_APPROVALS=true
+
+# Request limits
+REQUEST_TIMEOUT_MS=30000
+MAX_RESPONSE_BYTES=10485760
+
 # MCP Server URL (for UI widgets in production)
 # MCP_URL=https://your-production-url.com
 
@@ -279,25 +340,88 @@ function generateEnvExampleFile(baseUrl, port) {
 PORT=${port}
 NODE_ENV=development
 
-# API Configuration  
+# API Configuration
 API_BASE_URL=${baseUrl || 'https://api.example.com'}
 
 # Authentication
 API_KEY=your-api-key-here
 # API_AUTH_HEADER=Header-Name:header-value
 
-# MCP Configuration
-# MCP_URL=https://your-mcp-server.com
-# ALLOWED_ORIGINS=https://allowed-origin.com
+# Security — allowed API hosts (comma-separated). Leave empty to allow the spec's host only.
+# ALLOWED_API_HOSTS=api.example.com,api2.example.com
+
+# Tool policy — set to true to allow medium/high-risk (mutating) tools
+ALLOW_RESTRICTED_TOOLS=false
+# Set to false to bypass per-call approval requirement for restricted tools
+REQUIRE_APPROVALS=true
+
+# Request limits
+REQUEST_TIMEOUT_MS=30000
+MAX_RESPONSE_BYTES=10485760
+
+# MCP Server URL (for UI widgets in production)
+# MCP_URL=https://your-production-url.com
+
+# Allowed Origins (comma-separated, for production)
+# ALLOWED_ORIGINS=https://app1.com,https://app2.com
+`;
+}
+
+function generatePolicy() {
+  return `// Runtime security policy for generated MCP server
+
+const BLOCKED_HEADER_NAMES = new Set([
+  'authorization', 'cookie', 'set-cookie', 'x-api-key',
+  'x-auth-token', 'proxy-authorization', 'www-authenticate',
+]);
+
+const MAX_RESPONSE_BYTES = parseInt(process.env.MAX_RESPONSE_BYTES || '10485760');
+const REQUEST_TIMEOUT_MS = parseInt(process.env.REQUEST_TIMEOUT_MS || '30000');
+
+export { MAX_RESPONSE_BYTES, REQUEST_TIMEOUT_MS };
+
+export function sanitizeHeaderParams(headerParams = {}) {
+  const out = {};
+  for (const [k, v] of Object.entries(headerParams)) {
+    if (!BLOCKED_HEADER_NAMES.has(k.toLowerCase())) {
+      out[k] = String(v);
+    }
+  }
+  return out;
+}
+
+export function assertAllowedBaseUrl(baseUrl) {
+  const url = new URL(baseUrl);
+  const allowedHosts = (process.env.ALLOWED_API_HOSTS || '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+  if (allowedHosts.length > 0 && !allowedHosts.includes(url.host)) {
+    throw new Error(\`Disallowed API host: \${url.host}. Set ALLOWED_API_HOSTS to include it.\`);
+  }
+}
+
+export function checkToolPolicy(toolConfig) {
+  if (!toolConfig.enabledByDefault && process.env.ALLOW_RESTRICTED_TOOLS !== 'true') {
+    throw new Error(
+      \`Tool '\${toolConfig.name}' is disabled by policy (riskLevel: \${toolConfig.riskLevel}). \` +
+      \`Set ALLOW_RESTRICTED_TOOLS=true to enable restricted tools.\`
+    );
+  }
+  if (toolConfig.requiresApproval && process.env.REQUIRE_APPROVALS !== 'false') {
+    throw new Error(
+      \`Tool '\${toolConfig.name}' requires approval (riskLevel: \${toolConfig.riskLevel}). \` +
+      \`Set REQUIRE_APPROVALS=false to bypass, or route through an approval handler.\`
+    );
+  }
+}
 `;
 }
 
 function generateHttpClient() {
   return `// HTTP client for API requests
+import { sanitizeHeaderParams, MAX_RESPONSE_BYTES, REQUEST_TIMEOUT_MS } from './policy.js';
 
-/**
- * Build URL with path parameters substituted
- */
 export function buildUrl(baseUrl, pathTemplate, pathParams = {}) {
   let url = pathTemplate;
   for (const [key, value] of Object.entries(pathParams)) {
@@ -306,9 +430,6 @@ export function buildUrl(baseUrl, pathTemplate, pathParams = {}) {
   return new URL(url, baseUrl).toString();
 }
 
-/**
- * Build query string from parameters
- */
 export function buildQueryString(queryParams = {}) {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(queryParams)) {
@@ -323,95 +444,90 @@ export function buildQueryString(queryParams = {}) {
   return params.toString();
 }
 
-/**
- * Execute HTTP request for a tool
- */
 export async function executeRequest(toolConfig, args, config = {}) {
   const { baseUrl: configBaseUrl, headers: configHeaders = {} } = config;
   const baseUrl = configBaseUrl || toolConfig.baseUrl;
-  
+
   if (!baseUrl) {
     throw new Error(\`No base URL configured for tool: \${toolConfig.name}\`);
   }
-  
-  // Separate parameters by location
+
   const pathParams = {};
   const queryParams = {};
-  const headerParams = {};
+  const rawHeaderParams = {};
   let body;
-  
+
   for (const param of toolConfig.executionParameters || []) {
     const value = args[param.name];
     if (value === undefined) continue;
-    
     switch (param.in) {
-      case 'path':
-        pathParams[param.name] = value;
-        break;
-      case 'query':
-        queryParams[param.name] = value;
-        break;
-      case 'header':
-        headerParams[param.name] = value;
-        break;
+      case 'path':  pathParams[param.name] = value; break;
+      case 'query': queryParams[param.name] = value; break;
+      case 'header': rawHeaderParams[param.name] = value; break;
     }
   }
-  
-  // Handle request body
+
   if (args.requestBody !== undefined) {
     body = args.requestBody;
   }
-  
-  // Build URL
+
   let url = buildUrl(baseUrl, toolConfig.pathTemplate, pathParams);
-  
-  // Add query parameters
   const queryString = buildQueryString(queryParams);
   if (queryString) {
     url += (url.includes('?') ? '&' : '?') + queryString;
   }
-  
-  // Build headers
+
+  // configHeaders (auth) always win over spec-defined header params
   const headers = {
-    'Accept': 'application/json',
+    Accept: 'application/json',
+    ...sanitizeHeaderParams(rawHeaderParams),
     ...configHeaders,
-    ...headerParams,
   };
-  
-  // Set content type for request body
+
   if (body !== undefined) {
     headers['Content-Type'] = toolConfig.requestBodyContentType || 'application/json';
   }
-  
-  // Build request options
-  const requestOptions = {
-    method: toolConfig.method.toUpperCase(),
-    headers,
-  };
-  
-  if (body !== undefined && ['POST', 'PUT', 'PATCH'].includes(requestOptions.method)) {
-    requestOptions.body = typeof body === 'string' ? body : JSON.stringify(body);
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  let response;
+  try {
+    response = await fetch(url, {
+      method: toolConfig.method.toUpperCase(),
+      headers,
+      body: body !== undefined && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(toolConfig.method.toUpperCase())
+        ? (typeof body === 'string' ? body : JSON.stringify(body))
+        : undefined,
+      redirect: 'error',
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeout);
   }
-  
-  // Execute request
-  const response = await fetch(url, requestOptions);
-  
-  // Parse response
+
   const contentType = response.headers.get('content-type') || '';
-  let data;
-  
-  if (contentType.includes('application/json')) {
-    data = await response.json();
-  } else {
-    data = await response.text();
+  const contentLength = parseInt(response.headers.get('content-length') || '0', 10);
+  if (contentLength > MAX_RESPONSE_BYTES) {
+    throw new Error(\`Response too large: \${contentLength} bytes (max \${MAX_RESPONSE_BYTES})\`);
   }
-  
-  return {
-    status: response.status,
-    statusText: response.statusText,
-    data,
-    ok: response.ok,
-  };
+
+  let data;
+  if (contentType.includes('application/json')) {
+    const text = await response.text();
+    if (text.length > MAX_RESPONSE_BYTES) {
+      throw new Error(\`Response body too large: \${text.length} bytes (max \${MAX_RESPONSE_BYTES})\`);
+    }
+    data = JSON.parse(text);
+  } else {
+    const text = await response.text();
+    if (text.length > MAX_RESPONSE_BYTES) {
+      throw new Error(\`Response body too large: \${text.length} bytes (max \${MAX_RESPONSE_BYTES})\`);
+    }
+    data = text;
+  }
+
+  return { status: response.status, statusText: response.statusText, data, ok: response.ok };
 }
 `;
 }
@@ -425,6 +541,12 @@ function generateToolsConfig(tools) {
     executionParameters: tool.executionParameters,
     requestBodyContentType: tool.requestBodyContentType,
     baseUrl: tool.baseUrl,
+    tags: tool.tags,
+    operationId: tool.operationId,
+    riskLevel: tool.riskLevel,
+    requiresApproval: tool.requiresApproval,
+    allowedInInspector: tool.allowedInInspector,
+    enabledByDefault: tool.enabledByDefault,
   }));
 
   return `// Tool configurations extracted from OpenAPI spec
@@ -450,6 +572,7 @@ server.tool(
   },
   async (params) => {
     const toolConfig = toolConfigMap.get('${tool.name}');
+    checkToolPolicy(toolConfig);
     const result = await executeRequest(toolConfig, params, apiConfig);
 
     if (!result.ok) {
@@ -486,6 +609,7 @@ import { text, object } from 'mcp-use/server';
 import { z } from 'zod';
 import { executeRequest } from './http-client.js';
 import { toolConfigMap } from './tools-config.js';
+import { assertAllowedBaseUrl, checkToolPolicy } from './policy.js';
 
 // ============================================================================
 // Configuration
@@ -513,6 +637,11 @@ if (process.env.API_AUTH_HEADER) {
   }
 }
 
+// Validate API base URL against allowed hosts
+if (apiConfig.baseUrl) {
+  assertAllowedBaseUrl(apiConfig.baseUrl);
+}
+
 // ============================================================================
 // Server Setup
 // ============================================================================
@@ -522,7 +651,7 @@ const server = new MCPServer({
   version: '1.0.0',
   description: 'MCP server generated from OpenAPI specification',
   baseUrl: process.env.MCP_URL || \`http://localhost:\${PORT}\`,
-  allowedOrigins: isDev 
+  allowedOrigins: isDev
     ? undefined  // Development: allow all origins
     : process.env.ALLOWED_ORIGINS?.split(',').map(s => s.trim()) || [],
 });
@@ -551,6 +680,7 @@ console.log(\`
 ${tools.slice(0, 5).map(t => `   • ${t.name}`).join('\n')}${tools.length > 5 ? `\n   ... and ${tools.length - 5} more` : ''}
 Environment: \${isDev ? 'Development' : 'Production'}
 API Base:    \${apiConfig.baseUrl || 'Not configured'}
+Security: ALLOW_RESTRICTED_TOOLS=\${process.env.ALLOW_RESTRICTED_TOOLS || 'false'}, REQUIRE_APPROVALS=\${process.env.REQUIRE_APPROVALS || 'true'}
 \`);
 `;
 }
@@ -591,6 +721,21 @@ npm run dev
 
 Then open http://localhost:${port}/inspector to test your tools!
 
+## Security
+
+This server enforces a three-layer security policy:
+
+**Generation-time classification** — every tool is classified as \`low\`, \`medium\`, or \`high\` risk.
+Read-only (\`GET\`/\`HEAD\`/\`OPTIONS\`) endpoints are \`low\` risk and enabled by default.
+Mutating endpoints (\`POST\`/\`PUT\`/\`PATCH\`/\`DELETE\`) are \`medium\` risk and blocked unless \`ALLOW_RESTRICTED_TOOLS=true\`.
+Operations matching admin, payment, auth, billing, or credential patterns are \`high\` risk.
+
+**Runtime policy enforcement** — \`checkToolPolicy()\` runs before every API call and enforces the risk level and approval requirements set via environment variables.
+
+**HTTP hardening** — request timeouts, response size caps, redirect blocking, and credential header protection are enforced on every outbound request. Tool arguments cannot override \`Authorization\`, \`Cookie\`, or other credential headers.
+
+> **Inspector note**: The built-in inspector at \`/inspector\` exposes all registered tools. In production, restrict inspector access using a reverse proxy or firewall rule, and set \`NODE_ENV=production\`.
+
 ## Environment Variables
 
 | Variable | Description | Default |
@@ -602,6 +747,11 @@ Then open http://localhost:${port}/inspector to test your tools!
 | \`API_AUTH_HEADER\` | Custom auth header (format: \`Header:value\`) | - |
 | \`MCP_URL\` | Public MCP server URL (for widgets) | http://localhost:${port} |
 | \`ALLOWED_ORIGINS\` | Allowed origins in production (comma-separated) | - |
+| \`ALLOW_RESTRICTED_TOOLS\` | Allow medium/high-risk mutating tools | false |
+| \`REQUIRE_APPROVALS\` | Require explicit approval for restricted tools | true |
+| \`ALLOWED_API_HOSTS\` | Comma-separated allowed API hostnames | (spec's host) |
+| \`REQUEST_TIMEOUT_MS\` | Outbound request timeout in ms | 30000 |
+| \`MAX_RESPONSE_BYTES\` | Maximum response body size in bytes | 10485760 |
 
 ## Connect to Claude Desktop
 
@@ -654,7 +804,8 @@ ${serverName}/
 └── src/
     ├── index.js        # Main server with MCP tool registrations
     ├── http-client.js  # HTTP utilities for API calls
-    └── tools-config.js # Tool configurations from OpenAPI spec
+    ├── tools-config.js # Tool configurations from OpenAPI spec
+    └── policy.js       # Runtime security policy (tool policy, header sanitization)
 \`\`\`
 
 ## How It Works
@@ -754,6 +905,10 @@ async function generateMcpServer(specPathOrUrl, outputFolder, options = {}) {
       content: generateEnvExampleFile(effectiveBaseUrl, port)
     },
     {
+      path: path.join(srcDir, 'policy.js'),
+      content: generatePolicy()
+    },
+    {
       path: path.join(srcDir, 'http-client.js'),
       content: generateHttpClient()
     },
@@ -781,7 +936,7 @@ async function generateMcpServer(specPathOrUrl, outputFolder, options = {}) {
   }
 
   console.log(`
-🎉 MCP-Use Server Generated 
+🎉 MCP-Use Server Generated
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 
@@ -824,10 +979,14 @@ Arguments:
   output-folder   Directory to create the server in (default: ./mcp-server)
 
 Options:
-  --name <name>   Server name (default: openapi-mcp-server)
-  --base-url <url> Override API base URL from the spec
-  --port <port>   Server port (default: 3000)
-  --help, -h      Show this help message
+  --name <name>            Server name (default: openapi-mcp-server)
+  --base-url <url>         Override API base URL from the spec
+  --port <port>            Server port (default: 3000)
+  --allow-mutations        Enable POST/PUT/PATCH/DELETE tools by default
+  --include-tags <tags>    Only include tools with these tags (comma-separated)
+  --exclude-tags <tags>    Exclude tools with these tags (comma-separated)
+  --approve-writes         Disable approval requirement for restricted tools
+  --help, -h               Show this help message
 
 Examples:
   npx api2ai ./petstore.json ./my-server
@@ -852,6 +1011,14 @@ Examples:
       options.serverName = args[++i];
     } else if (args[i] === '--port' && args[i + 1]) {
       options.port = parseInt(args[++i]);
+    } else if (args[i] === '--allow-mutations') {
+      options.allowMutations = true;
+    } else if (args[i] === '--include-tags' && args[i + 1]) {
+      options.includeTags = args[++i].split(',').map(s => s.trim());
+    } else if (args[i] === '--exclude-tags' && args[i + 1]) {
+      options.excludeTags = args[++i].split(',').map(s => s.trim());
+    } else if (args[i] === '--approve-writes') {
+      options.requireApprovals = false;
     } else if (!args[i].startsWith('--')) {
       options.outputFolder = args[i];
     }
