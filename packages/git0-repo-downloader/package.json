@@ -1,7 +1,7 @@
 {
     "name": "git0",
     "description": "CLI tool to search GitHub repositories, download source & releases for your system, and instantly set up, then install dependencies and open code editor.",
-    "version": "0.2.13",
+    "version": "0.2.14",
     "author": "vtempest",
     "scripts": {
         "build": "bun build src/cli.ts --outdir dist --target node --format esm --sourcemap",
@@ -37,9 +37,9 @@
         "download"
     ],
     "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/OpenSourceAGI/appdemo-dev-tools/tree/master/packages/git0-repo-downloader"
-  },
-  "homepage": "https://github.com/OpenSourceAGI/appdemo-dev-tools/tree/master/packages/git0-repo-downloader"
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/OpenSourceAGI/appdemo-dev-tools/tree/master/packages/git0-repo-downloader"
+    },
+    "homepage": "https://github.com/OpenSourceAGI/appdemo-dev-tools/tree/master/packages/git0-repo-downloader"
 }

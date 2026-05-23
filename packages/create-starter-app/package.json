@@ -1,14 +1,14 @@
 {
   "name": "create-starter-app",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Interactive CLI to scaffold a starter app from curated templates",
   "type": "module",
   "bin": {
     "create-starter-app": "./bin/create-starter-app.js"
   },
-   "scripts": {
+  "scripts": {
     "ship": "npm run build && npx standard-version --release-as patch; rm CHANGELOG.md; npm publish"
-   },
+  },
   "files": [
     "bin",
     "starters"
