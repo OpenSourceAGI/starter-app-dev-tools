@@ -20,7 +20,6 @@ migrations/*
 */dist/*
 apps/docs/.next/*
 bun.lock
-*lock*
 dist/
 packages/template-fumadocs/.next/*
 .next/
