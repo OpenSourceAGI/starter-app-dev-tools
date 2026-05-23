@@ -30,9 +30,7 @@
     "build:docs": "cd docs && bun run build",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:ui": "vitest --ui",
-    "lint": "eslint .",
-    "format": "prettier --write ."
+    "test:ui": "vitest --ui"
   },
   "keywords": [
     "sms",
