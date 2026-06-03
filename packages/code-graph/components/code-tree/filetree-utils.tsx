@@ -1,7 +1,7 @@
 /**
  * Utility functions, types, and shared constants supporting the file tree components.
  */
-import type { FileTreeNode, AnalysisItem, AnalysisKind } from "@/lib/fumadocs/code-graph";
+import type { FileTreeNode, AnalysisItem, AnalysisKind } from "../../lib";
 import { type BadgeTooltipSection, type BadgeTooltipSectionItem, type BadgeIconName } from "./badge-tooltip";
 import { Markdown } from "../typography/markdown";
 import styles from "./filetree-table.module.css";

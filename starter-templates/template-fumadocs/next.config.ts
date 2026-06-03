@@ -14,6 +14,7 @@ type MDXNextConfig = NonNullable<Parameters<typeof withMDX>[0]>;
 export const config = {
   // output: 'export',
   // distDir: './dist',
+  transpilePackages: ['code-graph'],
   serverExternalPackages: [],
   turbopack: {
     root: resolve(import.meta.dirname, '.'),

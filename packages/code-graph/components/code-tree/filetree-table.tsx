@@ -6,7 +6,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import Fuse from "fuse.js";
 import { ChevronDown, Search, ArrowUpDown, ArrowUp, ArrowDown, Filter } from "lucide-react";
-import type { FileTreeNode } from "@/lib/fumadocs/code-graph";
+import type { FileTreeNode } from "../../lib";
 import styles from "./filetree-table.module.css";
 import { TreeRows } from "./filetree-rows";
 import {

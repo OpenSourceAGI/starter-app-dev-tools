@@ -7,7 +7,7 @@ import { useMemo, useState, useTransition, useRef, useEffect, type ReactNode } f
 import { Boxes, FunctionSquare, Package, Search, Share2, Settings, Cloud, Loader2, X, Download, HelpCircle } from "lucide-react";
 import { MermaidClient } from "./mermaid";
 import { buildChart, buildNodeTooltips, getGraphHierarchy, type FileInfo, type GraphDisplayOptions } from "./dependency-graph-shared";
-import { analyzeRemoteRepository } from "@/app/actions";
+import { analyzeRemoteRepository } from "../../actions";
 
 export function DependencyGraphClient({
   files: initialFiles,

@@ -1,0 +1,46 @@
+{
+  "name": "code-graph",
+  "version": "0.1.0",
+  "description": "Code dependency graph and file tree visualization components",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    },
+    "./dist/index.css": "./dist/index.css"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch"
+  },
+  "dependencies": {
+    "@radix-ui/react-tooltip": "^1.2.8",
+    "@typescript-eslint/typescript-estree": "^8.56.1",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "fuse.js": "^7.1.0",
+    "jszip": "^3.10.1",
+    "lucide-react": "^0.555.0",
+    "marked": "^17.0.4",
+    "mermaid": "^11.12.3",
+    "svg-toolbelt": "^0.6.1",
+    "tailwind-merge": "^3.5.0",
+    "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^6.3.5",
+    "vite-plugin-dts": "^4.5.4"
+  },
+  "peerDependencies": {
+    "fumadocs-core": "*",
+    "next": "*",
+    "react": "*",
+    "react-dom": "*"
+  }
+}

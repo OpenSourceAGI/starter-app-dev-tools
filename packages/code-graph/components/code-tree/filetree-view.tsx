@@ -1,7 +1,7 @@
 /**
  * Client-side component wrapping the standard file tree view with interactivity.
  */
-import { generateFileTree, parseIgnoreFile } from "@/lib/fumadocs/code-graph";
+import { generateFileTree, parseIgnoreFile } from "../../lib";
 import { FileTreeTable } from "./filetree-table";
 import path from "path";
 

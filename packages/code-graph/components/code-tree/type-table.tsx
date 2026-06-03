@@ -8,7 +8,7 @@
 import { ChevronDown } from 'lucide-react';
 import Link from 'fumadocs-core/link';
 import { cva } from 'class-variance-authority';
-import { cn } from '@/lib/utils';
+import { cn } from '../../utils';
 import { type ReactNode, useState } from 'react';
 import {
   Collapsible,

@@ -8,7 +8,7 @@
 'use client';
 
 import { ExternalLink } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import { Markdown } from '../typography/markdown';
 import type { ActiveTooltip } from './bind-node-interactions';
 

@@ -5,7 +5,7 @@
  */
 import { useRef, useState, useCallback, useEffect } from "react";
 import { Package, FunctionSquare, Braces, FileOutput, FileInput, Box, Blocks, Info } from "lucide-react";
-import type { TypeProperty } from "@/lib/fumadocs/code-graph";
+import type { TypeProperty } from "../../lib";
 import styles from "./badge-tooltip.module.css";
 import { Markdown } from "../typography/markdown";
 

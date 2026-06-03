@@ -1,7 +1,7 @@
 /**
  * Shared utility functions, logic, and tooltip builders for the dependency graph and its components.
  */
-import type { FileAnalysis } from "@/lib/fumadocs/code-graph";
+import type { FileAnalysis } from "../../lib";
 
 export interface FileInfo {
   path: string;

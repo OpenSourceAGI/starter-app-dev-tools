@@ -65,7 +65,7 @@
   "vars": {
     // How long to keep an idle container alive before hibernating.
     // Supports: "30s", "5m", "1h". Max ~24h. keepAlive: true disables sleep entirely.
-    "SLEEP_AFTER": "30m",
+    "SLEEP_AFTER": "2m",
 
     // ── Auth option A: Cloudflare Access JWT ─────────────────────────────────
     // Set these to validate CF Access JWTs. Leave blank to use option B or dev mode.

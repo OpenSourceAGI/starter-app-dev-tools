@@ -2,8 +2,8 @@
 
 import path from 'path';
 import JSZip from 'jszip';
-import { analyzeFileContent, type FileAnalysis } from '@/lib/fumadocs/code-graph';
-import type { FileInfo } from '@/components/fumadocs/codegraph/dependency-graph-shared';
+import { analyzeFileContent, type FileAnalysis } from './lib';
+import type { FileInfo } from './components/codegraph/dependency-graph-shared';
 
 const PARSEABLE_EXTS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs"]);
 

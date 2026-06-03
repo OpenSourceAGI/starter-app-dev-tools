@@ -7,7 +7,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { TooltipProvider } from '../../ui/tooltip';
+import { TooltipProvider } from '../ui/tooltip';
 import type { MermaidTooltipData } from './dependency-graph-shared';
 import { widenClusterLabels, parseMermaidSvg, type ParsedSvg } from './pan-zoom-controller';
 import { type ActiveTooltip, bindNodeTooltips, highlightMatchingNodes, interceptFiletreeAnchorClicks } from './bind-node-interactions';

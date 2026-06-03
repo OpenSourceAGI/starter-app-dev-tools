@@ -1,7 +1,7 @@
 /**
  * Server component that initializes and passes parsed graph data to the client-side dependency graph.
  */
-import { generateFileTree, parseIgnoreFile, type FileTreeNode } from "@/lib/fumadocs/code-graph";
+import { generateFileTree, parseIgnoreFile, type FileTreeNode } from "../../lib";
 import path from "path";
 import { DependencyGraphClient } from "./dependency-graph-client";
 import type { FileInfo, GraphDisplayOptions } from "./dependency-graph-shared";

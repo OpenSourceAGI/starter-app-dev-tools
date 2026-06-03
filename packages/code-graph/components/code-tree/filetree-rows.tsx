@@ -5,7 +5,7 @@ import { useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { Badge, NpmBadge } from "./badge-tooltip";
 import { Markdown } from "../typography/markdown";
-import type { FileTreeNode } from "@/lib/fumadocs/code-graph";
+import type { FileTreeNode } from "../../lib";
 import styles from "./filetree-table.module.css";
 import {
   exportStyles, defaultExportStyle, internalStyles, ghLineUrl, resolveLocalImport,
