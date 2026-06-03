@@ -1,6 +1,6 @@
 {
   "name": "code-graph",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Code dependency graph and file tree visualization components",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
