@@ -13,9 +13,11 @@
     {
       "class_name": "CodeServerContainer",
       "image": "./Dockerfile",
-      // standard-1 = 1 vCPU / 2 GB RAM — minimum for code-server
-      // upgrade to standard-2 (2 vCPU / 4 GB) for heavier workloads
-      "instance_type": "standard-1",
+
+      // basic	0.5	512 MB	~$0.15	Light use / testing only
+      // standard-1	1	2 GB	~$0.30	Default — most projects
+      // standard-2	2	4 GB	~$0.60	Monorepos / heavy workloads
+      "instance_type": "basic",
       // Max simultaneously running containers across all users (~$0.30/hr each)
       "max_instances": 50,
     },

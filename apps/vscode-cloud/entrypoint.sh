@@ -90,7 +90,7 @@ if [[ ! -f "$SETTINGS_FILE" ]]; then
   "editor.tabSize": 2,
   "editor.wordWrap": "on",
   "terminal.integrated.defaultProfile.linux": "bash",
-  "terminal.integrated.fontSize": 13,
+  "terminal.integrated.fontSize": 14,
   "files.watcherExclude": {
     "**/.git/objects/**": true,
     "**/.git/subtree-cache/**": true,
@@ -127,7 +127,14 @@ WAKA
 fi
 
 # ── Start code-server ─────────────────────────────────────────────────────────
-# Auth is handled by the Cloudflare Worker (CF Access JWT or Google OAuth session).
-# The container is only reachable through the authenticated Worker, so --auth none
-# is safe — no password prompt is shown to users.
-exec /usr/bin/entrypoint.sh --bind-addr 0.0.0.0:8080 --auth none "${WORKSPACE}"
+# When deployed behind the Cloudflare Worker (CF Access / Google OAuth), auth is
+# enforced at the Worker layer so --auth none is safe.
+# When running locally without CF, set the PASSWORD env var to enable the
+# built-in code-server password prompt instead.
+if [[ -n "$PASSWORD" ]]; then
+  AUTH_ARG="--auth password"
+else
+  AUTH_ARG="--auth none"
+fi
+
+exec /usr/bin/entrypoint.sh --bind-addr 0.0.0.0:8080 ${AUTH_ARG} "${WORKSPACE}"

@@ -5,7 +5,11 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "type-check": "tsc --noEmit",
-    "build": "tsc --noEmit && echo 'Type check passed — wrangler bundles on deploy'"
+    "build": "tsc --noEmit && echo 'Type check passed — wrangler bundles on deploy'",
+    "local": "docker compose -f compose.yml -f compose.local.yml up",
+    "local:build": "docker compose -f compose.yml -f compose.local.yml up --build",
+    "local:down": "docker compose -f compose.yml -f compose.local.yml down",
+    "local:clean": "docker compose -f compose.yml -f compose.local.yml down -v"
   },
   "dependencies": {
     "@cloudflare/containers": "^0.3.3",

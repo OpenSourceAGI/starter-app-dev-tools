@@ -434,6 +434,8 @@ npx wrangler containers list --status
 
 ## Local development
 
+### Worker (simulated Cloudflare runtime)
+
 ```bash
 npm run dev      # wrangler dev — simulates Workers runtime (no real containers)
 npm run build    # TypeScript type-check only
@@ -445,6 +447,72 @@ In dev mode leave all auth vars empty and append `?user=yourname` to switch betw
 http://localhost:8787/?user=alice
 http://localhost:8787/admin?user=alice
 ```
+
+### Running locally without Cloudflare
+
+Run a full VS Code environment on your machine with a single Docker Compose command — no Cloudflare account, no wrangler, no R2 needed. Workspace files are persisted to a local Docker volume (or a host directory you choose).
+
+**Prerequisites:** [Docker Desktop](https://docs.docker.com/get-docker/) (or Docker Engine + Compose plugin)
+
+#### 1. First run (builds the image, ~5–10 min)
+
+```bash
+npm run local:build
+```
+
+Open [http://localhost:8080](http://localhost:8080) and log in with password **`changeme`**.
+
+> The first build downloads all language runtimes and VS Code extensions. Subsequent starts reuse the cached image and take a few seconds.
+
+#### 2. Day-to-day use
+
+```bash
+npm run local          # start (no rebuild)
+npm run local:down     # stop (workspace preserved in Docker volume)
+npm run local:build    # rebuild after Dockerfile or entrypoint.sh changes
+npm run local:clean    # stop and delete all volumes (full reset)
+```
+
+#### 3. Custom options
+
+Set any of these variables in your shell (or in a `.env` file next to `compose.yml`) before running:
+
+| Variable | Default | Description |
+|---|---|---|
+| `PASSWORD` | `changeme` | Login password shown on the code-server screen |
+| `WORKSPACE_DIR` | Docker named volume | Host path mounted as `/home/coder/workspace` (e.g. `~/code`) |
+| `PORT` | `8080` | Host port — change if 8080 is already taken |
+| `GITHUB_REPOS` | `""` | Comma-separated `owner/repo` pairs to auto-clone on first boot |
+| `GITHUB_TOKEN` | `""` | GitHub PAT with `repo` scope (private repos only) |
+
+Example — custom password, bind-mount `~/code` as the workspace, expose on port 9000:
+
+```bash
+PASSWORD=mysecret WORKSPACE_DIR=~/code PORT=9000 \
+  docker compose -f compose.yml -f compose.local.yml up --build
+```
+
+#### 4. Persist VS Code settings across rebuilds
+
+The `vscode-user-data` Docker volume stores your VS Code user settings (themes, keybindings, extension configs). It survives `down` and even `up --build` — only `down -v` removes it.
+
+#### 5. Full teardown
+
+```bash
+npm run local:clean    # removes containers + named volumes (workspace and VS Code settings)
+```
+
+> This permanently deletes the workspace volume. If `WORKSPACE_DIR` points to a host directory, that directory is **not** deleted.
+
+#### What's different from the Cloudflare deployment
+
+| | Local (compose.local.yml) | Cloudflare (wrangler deploy) |
+|---|---|---|
+| Auth | code-server password (`PASSWORD`) | CF Access JWT or Google OAuth |
+| Workspace storage | Docker volume or host directory | R2 bucket (FUSE-mounted) |
+| FUSE / SYS_ADMIN | Not required | Required for geesefs R2 mount |
+| Multiple users | One container, one user | One Durable Object + container per user |
+| Cost | Your hardware | ~$0.30/hr per active container |
 
 ---
 

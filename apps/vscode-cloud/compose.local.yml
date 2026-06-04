@@ -1,0 +1,44 @@
+# Local-only override — no Cloudflare account required.
+#
+# Usage:
+#   docker compose -f compose.yml -f compose.local.yml up --build
+#
+# Or with a custom password and workspace mount:
+#   PASSWORD=mysecret WORKSPACE_DIR=~/code \
+#     docker compose -f compose.yml -f compose.local.yml up --build
+#
+# Access the IDE at http://localhost:8080
+
+services:
+  code-server:
+    # Drop FUSE capabilities — R2/geesefs not used locally.
+    cap_add: []
+    devices: []
+    security_opt: []
+
+    environment:
+      # Password shown on the code-server login screen.
+      # Change this or set PASSWORD= in your shell before running.
+      PASSWORD: ${PASSWORD:-changeme}
+
+      # Workspace identity (used as sub-directory label only; no R2 effect locally)
+      USER_ID: ${USER_ID:-dev}
+
+      # Disable R2 — workspace persists to the local Docker volume below.
+      R2_ACCESS_KEY_ID: ""
+      R2_SECRET_ACCESS_KEY: ""
+      R2_ACCOUNT_ID: ""
+      R2_BUCKET_NAME: ""
+
+      # Optional: clone repos into the workspace on first boot.
+      GITHUB_REPOS: ${GITHUB_REPOS:-}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+
+    volumes:
+      # Mount a host directory as the workspace so files survive container rebuilds.
+      # Defaults to a named volume when WORKSPACE_DIR is not set.
+      - ${WORKSPACE_DIR:-workspace}:/home/coder/workspace
+      - vscode-user-data:/home/coder/.local/share/code-server/User
+
+    ports:
+      - "${PORT:-8080}:8080"

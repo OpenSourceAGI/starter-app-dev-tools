@@ -1,5 +1,5 @@
 <p align="center">
-    <img width="300px" src="https://i.imgur.com/jg49HQ8.png" />
+    <img width="300px" src="https://i.imgur.com/nkXljkR.png" />
 <p align="center">
     <a href="https://discord.gg/SJdBqBz3tV">
         <img src="https://img.shields.io/discord/1110227955554209923.svg?label=Chat&logo=Discord&colorB=7289da&style=flat"
@@ -27,7 +27,8 @@
     </a>
 </p>
 
-# code-graph
+
+# code-tree-graph
 
 Interactive code dependency graph and file tree visualization components for [Fumadocs](https://fumadocs.vercel.app/) + Next.js. Drop them into any MDX page to generate live, navigable views of your codebase — no external service required.
 
@@ -42,13 +43,13 @@ Interactive code dependency graph and file tree visualization components for [Fu
 ## Installation
 
 ```bash
-npm install code-graph
+npm i code-tree-graph
 ```
 
 Import the CSS once in your app root (e.g. `app/layout.tsx`):
 
 ```ts
-import "code-graph/dist/index.css";
+import "code-tree-graph/dist/index.css";
 ```
 
 ### Peer dependencies
@@ -66,7 +67,7 @@ npm install react react-dom next fumadocs-core
 Server component. Scans directories with the AST engine and renders an interactive Mermaid flowchart.
 
 ```tsx
-import { DependencyGraph } from "code-graph";
+import { DependencyGraph } from "code-tree-graph";
 
 export default function Page() {
   return (
@@ -113,7 +114,7 @@ export default function Page() {
 Server component. Generates a filterable table of your file tree with code-analysis metadata.
 
 ```tsx
-import { FileTreeView } from "code-graph";
+import { FileTreeView } from "code-tree-graph";
 
 export default function Page() {
   return (
@@ -164,7 +165,7 @@ export default function Page() {
 Client component for rendering collapsible type/property tables in documentation pages.
 
 ```tsx
-import { TypeTable } from "code-graph";
+import { TypeTable } from "code-tree-graph";
 
 export default function Page() {
   return (
@@ -189,7 +190,7 @@ import {
   generateFileTree,
   analyzeFileContent,
   parseIgnoreFile,
-} from "code-graph";
+} from "code-tree-graph";
 ```
 
 ### `generateFileTree`
@@ -217,7 +218,7 @@ const tree = generateFileTree(
 Analyzes source text in memory — no filesystem read needed.
 
 ```ts
-import { analyzeFileContent } from "code-graph";
+import { analyzeFileContent } from "code-tree-graph";
 
 const analysis = analyzeFileContent("index.ts", sourceText);
 // { localImports, npmImports, exports, functions, types, ... }
@@ -228,7 +229,7 @@ const analysis = analyzeFileContent("index.ts", sourceText);
 Parses a `.gitignore`-style file into a `Set<string>` of patterns.
 
 ```ts
-import { parseIgnoreFile } from "code-graph";
+import { parseIgnoreFile } from "code-tree-graph";
 
 const patterns = parseIgnoreFile("/path/to/.treeignore");
 const tree = generateFileTree("/path/to/src", {}, patterns);

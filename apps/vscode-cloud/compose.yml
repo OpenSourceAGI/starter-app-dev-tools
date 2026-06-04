@@ -33,8 +33,6 @@ services:
       GITHUB_REPOS: ${GITHUB_REPOS:-}
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
 
-      # ── WakaTime (optional) ───────────────────────────────────────────────
-      WAKATIME_API_KEY: ${WAKATIME_API_KEY:-}
 
     volumes:
       # Persist the workspace locally when R2 is not configured.
