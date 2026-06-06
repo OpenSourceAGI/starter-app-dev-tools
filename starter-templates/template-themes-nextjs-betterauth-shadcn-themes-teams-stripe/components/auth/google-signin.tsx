@@ -47,7 +47,7 @@ export function GoogleSignIn() {
     setIsLoading(true)
     // @ts-ignore
     await signIn.anonymous({
-      callbackURL: "/dashboard",
+      // callbackURL: "/dashboard",
     })
   }
 
