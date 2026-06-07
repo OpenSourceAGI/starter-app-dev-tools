@@ -7,7 +7,7 @@ export default defineConfig({
   root: resolve(__dirname, "demo"),
   publicDir: resolve(__dirname, "images"),
   build: {
-    outDir: resolve(__dirname, "demo-dist"),
+    outDir: resolve(__dirname, "dist"),
     emptyOutDir: true,
   },
 });

@@ -194,6 +194,7 @@
     "resend": "^6.6.0",
     "sass": "latest",
     "sass-embedded": "latest",
+    "shadcn-theme-menu": "^1.1.12",
     "simplex-noise": "^4.0.3",
     "siwe": "^3.0.0",
     "snappy": "latest",

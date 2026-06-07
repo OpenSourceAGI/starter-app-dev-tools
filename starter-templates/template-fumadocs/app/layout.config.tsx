@@ -5,6 +5,7 @@
 import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
 import { BookOpen, Link2 } from 'lucide-react';
 import { docsConfig } from '@/lib/fumadocs/customize-docs';
+import { ThemeDropdown } from '@/components/fumadocs/layout/theme-dropdown';
 
 export const baseOptions: BaseLayoutProps = {
   nav: {
@@ -21,6 +22,10 @@ export const baseOptions: BaseLayoutProps = {
       icon: <BookOpen />,
       text: 'Docs',
       url: '/docs',
+    },
+    {
+      type: 'custom' as const,
+      children: <ThemeDropdown />,
     },
   ],
   githubUrl: 'https://github.com/vtempest/grab-url',

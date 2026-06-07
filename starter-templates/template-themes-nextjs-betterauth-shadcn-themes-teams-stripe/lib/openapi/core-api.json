@@ -1,9 +1,9 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "User API",
+    "title": "App API",
     "version": "1.0.0",
-    "description": "Core user management API",
+    "description": "REST API for users, organizations, teams, notifications, and more.",
     "contact": {
       "name": "API Support"
     }
@@ -12,60 +12,234 @@
     {
       "url": "http://localhost:3000/api",
       "description": "Development server"
+    },
+    {
+      "url": "/api",
+      "description": "Current server"
     }
   ],
   "tags": [
-    {
-      "name": "User",
-      "description": "User management endpoints"
-    }
+    { "name": "User", "description": "User settings and API keys" },
+    { "name": "Organizations", "description": "Organization management" },
+    { "name": "Teams", "description": "Team management" },
+    { "name": "Invitations", "description": "User invitations" },
+    { "name": "Social", "description": "Follows and likes" },
+    { "name": "Notifications", "description": "In-app notifications" },
+    { "name": "Search", "description": "Documentation search" }
   ],
   "paths": {
     "/user/settings": {
       "get": {
-        "tags": [
-          "User"
-        ],
+        "tags": ["User"],
         "summary": "Get user settings",
-        "description": "Retrieve user settings and API keys (masked)",
+        "description": "Retrieve the authenticated user's settings and masked API keys.",
+        "security": [{ "BearerAuth": [] }],
         "responses": {
           "200": {
-            "description": "Successful response",
+            "description": "User settings",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserSettings" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "tags": ["User"],
+        "summary": "Save user settings",
+        "description": "Create or update the authenticated user's settings.",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UserSettingsInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Settings saved",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/user/api-key/regenerate": {
+      "post": {
+        "tags": ["User"],
+        "summary": "Regenerate API key",
+        "description": "Generate a new API key for the authenticated user, invalidating the previous one.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "New API key",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": {
-                      "type": "boolean"
-                    },
-                    "settings": {
-                      "type": "object"
+                    "success": { "type": "boolean" },
+                    "apiKey": { "type": "string", "example": "tt_a1b2c3d4..." }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/organizations": {
+      "get": {
+        "tags": ["Organizations"],
+        "summary": "List user's organizations",
+        "description": "Retrieve all organizations the authenticated user is a member of.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "List of organizations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/OrganizationSummary" }
                     }
                   }
                 }
               }
             }
           },
-          "401": {
-            "description": "Unauthorized"
-          }
+          "401": { "$ref": "#/components/responses/Unauthorized" }
         }
       },
       "post": {
-        "tags": [
-          "User"
-        ],
-        "summary": "Save user settings",
-        "description": "Save or update user settings and API keys",
+        "tags": ["Organizations"],
+        "summary": "Create organization",
+        "description": "Create a new organization. The creator is automatically added as the owner.",
+        "security": [{ "BearerAuth": [] }],
         "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/OrganizationInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created organization",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": { "$ref": "#/components/schemas/Organization" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/organizations/{id}": {
+      "parameters": [
+        { "$ref": "#/components/parameters/IdParam" }
+      ],
+      "get": {
+        "tags": ["Organizations"],
+        "summary": "Get organization",
+        "description": "Retrieve details of an organization the user is a member of, including members and teams.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Organization details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": { "$ref": "#/components/schemas/OrganizationDetail" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "patch": {
+        "tags": ["Organizations"],
+        "summary": "Update organization",
+        "description": "Update organization details. Requires owner or admin role.",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/OrganizationInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "$ref": "#/components/responses/SuccessMessage" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      },
+      "delete": {
+        "tags": ["Organizations"],
+        "summary": "Delete organization",
+        "description": "Permanently delete an organization. Requires owner role.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "$ref": "#/components/responses/SuccessMessage" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/organizations/{id}/members": {
+      "parameters": [
+        { "$ref": "#/components/parameters/IdParam" }
+      ],
+      "post": {
+        "tags": ["Organizations"],
+        "summary": "Add organization member",
+        "description": "Add a user to the organization. Requires owner or admin role.",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
+                "required": ["userId"],
                 "properties": {
-                  "settings": {
-                    "type": "object"
+                  "userId": { "type": "string" },
+                  "role": {
+                    "type": "string",
+                    "enum": ["owner", "admin", "member"],
+                    "default": "member"
                   }
                 }
               }
@@ -74,32 +248,936 @@
         },
         "responses": {
           "200": {
-            "description": "Settings saved successfully",
+            "description": "Member added",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": {
-                      "type": "boolean"
+                    "success": { "type": "boolean" },
+                    "data": { "$ref": "#/components/schemas/OrgMember" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "delete": {
+        "tags": ["Organizations"],
+        "summary": "Remove organization member",
+        "description": "Remove a user from the organization. Requires owner or admin role.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/SuccessMessage" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/teams": {
+      "post": {
+        "tags": ["Teams"],
+        "summary": "Create team",
+        "description": "Create a new team within an organization. Requires org owner or admin role.",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TeamInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created team",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": { "$ref": "#/components/schemas/Team" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/teams/{id}": {
+      "parameters": [
+        { "$ref": "#/components/parameters/IdParam" }
+      ],
+      "get": {
+        "tags": ["Teams"],
+        "summary": "Get team",
+        "description": "Retrieve team details including members. Requires org membership.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Team details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": { "$ref": "#/components/schemas/TeamDetail" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "patch": {
+        "tags": ["Teams"],
+        "summary": "Update team",
+        "description": "Update team name or description. Requires org admin or team lead.",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "description": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "$ref": "#/components/responses/SuccessMessage" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "delete": {
+        "tags": ["Teams"],
+        "summary": "Delete team",
+        "description": "Delete a team permanently. Requires org owner or admin role.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "$ref": "#/components/responses/SuccessMessage" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/teams/{id}/members": {
+      "parameters": [
+        { "$ref": "#/components/parameters/IdParam" }
+      ],
+      "post": {
+        "tags": ["Teams"],
+        "summary": "Add team member",
+        "description": "Add an organization member to a team. User must already belong to the org.",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["userId"],
+                "properties": {
+                  "userId": { "type": "string" },
+                  "role": {
+                    "type": "string",
+                    "enum": ["lead", "member"],
+                    "default": "member"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Member added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": { "$ref": "#/components/schemas/TeamMember" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      },
+      "delete": {
+        "tags": ["Teams"],
+        "summary": "Remove team member",
+        "description": "Remove a member from a team. Requires org admin or team lead.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/SuccessMessage" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/invitations": {
+      "get": {
+        "tags": ["Invitations"],
+        "summary": "List invitations",
+        "description": "Get sent or received invitations for the authenticated user.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "description": "Filter by invitation direction",
+            "schema": { "type": "string", "enum": ["sent", "received"] }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invitations list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Invitation" }
                     }
                   }
                 }
               }
             }
           },
-          "401": {
-            "description": "Unauthorized"
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "tags": ["Invitations"],
+        "summary": "Send invitation",
+        "description": "Send an invitation to a user by email, optionally to join an org or team.",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email"],
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "organizationId": { "type": "string" },
+                  "teamId": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Invitation sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": { "$ref": "#/components/schemas/Invitation" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "patch": {
+        "tags": ["Invitations"],
+        "summary": "Accept or reject invitation",
+        "description": "Accept or reject a pending invitation sent to the authenticated user's email.",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["invitationId", "status"],
+                "properties": {
+                  "invitationId": { "type": "string" },
+                  "status": { "type": "string", "enum": ["accepted", "rejected"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "$ref": "#/components/responses/SuccessMessage" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/likes": {
+      "get": {
+        "tags": ["Social"],
+        "summary": "Get likes",
+        "description": "Get the like count for an item and whether the current user liked it.",
+        "parameters": [
+          {
+            "name": "itemType",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["debate_report", "news_tip", "signal", "strategy", "comment"]
+            }
+          },
+          {
+            "name": "itemId",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Like info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "count": { "type": "integer" },
+                        "userLiked": { "type": "boolean" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" }
+        }
+      },
+      "post": {
+        "tags": ["Social"],
+        "summary": "Like an item",
+        "description": "Add a like to an item.",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["itemType", "itemId"],
+                "properties": {
+                  "itemType": {
+                    "type": "string",
+                    "enum": ["debate_report", "news_tip", "signal", "strategy", "comment"]
+                  },
+                  "itemId": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Like added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string" },
+                        "userId": { "type": "string" },
+                        "itemType": { "type": "string" },
+                        "itemId": { "type": "string" },
+                        "count": { "type": "integer" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "tags": ["Social"],
+        "summary": "Unlike an item",
+        "description": "Remove a like from an item.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "itemType",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "itemId",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/SuccessMessage" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/users/follow": {
+      "get": {
+        "tags": ["Social"],
+        "summary": "Get followers or following",
+        "description": "Get a user's followers or the list of users they follow.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["followers", "following"] }
+          },
+          {
+            "name": "userId",
+            "in": "query",
+            "description": "Defaults to the authenticated user",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Follow list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/FollowUser" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "tags": ["Social"],
+        "summary": "Follow a user",
+        "description": "Follow another user. Cannot follow yourself.",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["userId"],
+                "properties": {
+                  "userId": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Now following",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": { "$ref": "#/components/schemas/Follow" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "delete": {
+        "tags": ["Social"],
+        "summary": "Unfollow a user",
+        "description": "Stop following a user.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/SuccessMessage" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/notifications": {
+      "get": {
+        "tags": ["Notifications"],
+        "summary": "List notifications",
+        "description": "Get the authenticated user's notifications.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "unreadOnly",
+            "in": "query",
+            "schema": { "type": "boolean", "default": false }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 50 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notifications",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Notification" }
+                    },
+                    "unreadCount": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "patch": {
+        "tags": ["Notifications"],
+        "summary": "Mark notifications as read",
+        "description": "Mark one or all notifications as read.",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "notificationId": { "type": "string" },
+                  "markAllAsRead": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "$ref": "#/components/responses/SuccessMessage" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "tags": ["Notifications"],
+        "summary": "Delete notifications",
+        "description": "Delete a specific notification or all read notifications.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "notificationId",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "deleteAll",
+            "in": "query",
+            "description": "Delete all read notifications",
+            "schema": { "type": "boolean" }
+          }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/SuccessMessage" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/search": {
+      "get": {
+        "tags": ["Search"],
+        "summary": "Search documentation",
+        "description": "Full-text search across documentation pages using Fumadocs advanced search.",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "tag",
+            "in": "query",
+            "description": "Filter by doc section tag",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "title": { "type": "string" },
+                          "description": { "type": "string" },
+                          "url": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
     }
   },
   "components": {
+    "parameters": {
+      "IdParam": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string" }
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "Unauthorized",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Forbidden",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Not found",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      },
+      "BadRequest": {
+        "description": "Bad request",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      },
+      "SuccessMessage": {
+        "description": "Success",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": { "type": "boolean" },
+                "message": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" }
+        }
+      },
+      "SuccessResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" }
+        }
+      },
+      "UserSettings": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "userId": { "type": "string" },
+          "apiKey": { "type": "string", "nullable": true },
+          "groqApiKey": { "type": "string", "nullable": true, "description": "Masked value" },
+          "openaiApiKey": { "type": "string", "nullable": true, "description": "Masked value" },
+          "anthropicApiKey": { "type": "string", "nullable": true, "description": "Masked value" },
+          "xaiApiKey": { "type": "string", "nullable": true, "description": "Masked value" },
+          "googleApiKey": { "type": "string", "nullable": true, "description": "Masked value" },
+          "togetheraiApiKey": { "type": "string", "nullable": true, "description": "Masked value" },
+          "perplexityApiKey": { "type": "string", "nullable": true, "description": "Masked value" },
+          "cloudflareApiKey": { "type": "string", "nullable": true, "description": "Masked value" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "UserSettingsInput": {
+        "type": "object",
+        "properties": {
+          "groqApiKey": { "type": "string" },
+          "openaiApiKey": { "type": "string" },
+          "anthropicApiKey": { "type": "string" },
+          "xaiApiKey": { "type": "string" },
+          "googleApiKey": { "type": "string" },
+          "togetheraiApiKey": { "type": "string" },
+          "perplexityApiKey": { "type": "string" },
+          "cloudflareApiKey": { "type": "string" }
+        }
+      },
+      "Organization": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "description": { "type": "string", "nullable": true },
+          "image": { "type": "string", "nullable": true },
+          "ownerId": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "OrganizationSummary": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Organization" },
+          {
+            "type": "object",
+            "properties": {
+              "role": { "type": "string", "enum": ["owner", "admin", "member"] }
+            }
+          }
+        ]
+      },
+      "OrganizationDetail": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Organization" },
+          {
+            "type": "object",
+            "properties": {
+              "members": { "type": "array", "items": { "$ref": "#/components/schemas/OrgMember" } },
+              "teams": { "type": "array", "items": { "$ref": "#/components/schemas/Team" } },
+              "userRole": { "type": "string", "enum": ["owner", "admin", "member"] }
+            }
+          }
+        ]
+      },
+      "OrganizationInput": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "image": { "type": "string" }
+        }
+      },
+      "OrgMember": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "organizationId": { "type": "string" },
+          "userId": { "type": "string" },
+          "role": { "type": "string", "enum": ["owner", "admin", "member"] },
+          "joinedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Team": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "organizationId": { "type": "string" },
+          "name": { "type": "string" },
+          "description": { "type": "string", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "TeamDetail": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Team" },
+          {
+            "type": "object",
+            "properties": {
+              "members": { "type": "array", "items": { "$ref": "#/components/schemas/TeamMember" } }
+            }
+          }
+        ]
+      },
+      "TeamInput": {
+        "type": "object",
+        "required": ["organizationId", "name"],
+        "properties": {
+          "organizationId": { "type": "string" },
+          "name": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      },
+      "TeamMember": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "teamId": { "type": "string" },
+          "userId": { "type": "string" },
+          "role": { "type": "string", "enum": ["lead", "member"] },
+          "joinedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Invitation": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "inviterId": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "status": { "type": "string", "enum": ["pending", "accepted", "rejected"] },
+          "organizationId": { "type": "string", "nullable": true },
+          "teamId": { "type": "string", "nullable": true },
+          "expiresAt": { "type": "string", "format": "date-time" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Follow": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "followerId": { "type": "string" },
+          "followingId": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "FollowUser": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "userId": { "type": "string" },
+          "name": { "type": "string" },
+          "email": { "type": "string" },
+          "image": { "type": "string", "nullable": true },
+          "followedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Notification": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "type": { "type": "string", "enum": ["invite", "follow", "like", "mention", "system"] },
+          "title": { "type": "string" },
+          "message": { "type": "string" },
+          "actionUrl": { "type": "string", "nullable": true },
+          "read": { "type": "boolean" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "fromUserId": { "type": "string", "nullable": true },
+          "fromUserName": { "type": "string", "nullable": true },
+          "fromUserImage": { "type": "string", "nullable": true },
+          "relatedItemType": { "type": "string", "nullable": true },
+          "relatedItemId": { "type": "string", "nullable": true }
+        }
+      }
+    },
     "securitySchemes": {
       "BearerAuth": {
         "type": "http",
-        "scheme": "bearer"
+        "scheme": "bearer",
+        "description": "Use your API key from Settings > API Key"
       }
     }
   }

@@ -2,59 +2,72 @@ import vinext from "vinext";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import fumadocs from "fumadocs-mdx/vite";
 import { docs } from "./source.config";
-import { defineConfig, type Plugin } from "vite";
+import { defineConfig } from "vite";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { readFileSync } from "node:fs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Fallback: handle ?collection= query IDs that fumadocs misses in the RSC inner build
-function collectionFallback(): Plugin {
+const fumadocsPlugin = await fumadocs({ docs });
+
+// Intercept ?collection= JSON IDs so rolldown never tries to parse them as JS.
+// Phase 1 (load, enforce:pre): return raw JSON so fumadocs transform can parse it.
+// Phase 2 (transform, default priority): if output is still raw JSON wrap it in
+// `export default` — fumadocs uses json:"json" mode which relies on Vite's JSON
+// plugin, but that plugin doesn't run for ?query-suffixed IDs in RSC builds.
+function fumadocsJsonLoad() {
   return {
-    name: "collection-fallback",
-    enforce: "pre",
-    transform(code, id) {
-      if (!id.includes("?collection=")) return;
+    name: "fumadocs-json-load",
+    enforce: "pre" as const,
+    resolveId(id: string) {
+      if (id.match(/\.json\?.*collection=/)) return id;
+    },
+    load(id: string) {
+      if (!id.match(/\.json\?.*collection=/)) return;
       const filePath = id.split("?")[0];
-      if (filePath.endsWith(".json")) {
-        // Wrap raw JSON as a default export so rolldown can parse it as JS
-        return { code: `export default ${code}`, map: null };
-      }
-      const params = new URLSearchParams(id.split("?")[1]);
-      if (params.get("only") === "frontmatter") {
-        // Extract YAML frontmatter and export as JS object using fumadocs pre-built data
-        const match = code.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-        if (match) {
-          try {
-            // Simple frontmatter: key: value per line
-            const lines = match[1].split("\n");
-            const obj: Record<string, string> = {};
-            for (const line of lines) {
-              const m = line.match(/^(\w+):\s*(.*)$/);
-              if (m) obj[m[1]] = m[2].trim().replace(/^['"]|['"]$/g, "");
-            }
-            return { code: `export const frontmatter = ${JSON.stringify(obj)}`, map: null };
-          } catch {
-            return { code: `export const frontmatter = {}`, map: null };
-          }
-        }
-        return { code: `export const frontmatter = {}`, map: null };
+      try {
+        return { code: readFileSync(filePath, "utf8"), map: null };
+      } catch {
+        return { code: "{}", map: null };
       }
     },
   };
 }
 
-const fumadocsPlugin = await fumadocs({ docs });
+function fumadocsJsonWrap() {
+  return {
+    name: "fumadocs-json-wrap",
+    transform(code: string, id: string) {
+      if (!id.match(/\.json\?.*collection=/)) return;
+      const trimmed = code.trim();
+      if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+        try {
+          return { code: `export default ${JSON.stringify(JSON.parse(trimmed))}`, map: null };
+        } catch {
+          return null;
+        }
+      }
+    },
+  };
+}
 
 export default defineConfig({
+  // Polyfill CJS globals so Node-only packages (e.g. typescript, ts-morph) bundled into
+  // Cloudflare Workers don't crash with "ReferenceError: __filename is not defined".
+  define: {
+    __filename: JSON.stringify("/"),
+    __dirname: JSON.stringify("/"),
+  },
   resolve: {
     alias: {
       "fumadocs-mdx:collections/server": path.resolve(__dirname, ".source/server.ts"),
     },
   },
   plugins: [
-    collectionFallback(),
+    fumadocsJsonLoad(),
     fumadocsPlugin,
+    fumadocsJsonWrap(),
     vinext(),
     cloudflare({
       viteEnvironment: { name: "rsc", childEnvironments: ["ssr"] },

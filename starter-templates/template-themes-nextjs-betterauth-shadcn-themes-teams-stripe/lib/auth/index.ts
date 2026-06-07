@@ -1,6 +1,5 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { oneTap, openAPI, magicLink, anonymous } from "better-auth/plugins";
 import { db } from "../db";
 import * as schema from "../db/schema";
@@ -46,15 +45,39 @@ async function authBuilder() {
   });
 }
 
-// Singleton — created on first request so CF context is available
-let authInstance: Awaited<ReturnType<typeof authBuilder>> | null = null;
+type AuthInstance = Awaited<ReturnType<typeof authBuilder>>;
 
-export async function initAuth() {
+let authInstance: AuthInstance | null = null;
+
+export async function initAuth(): Promise<AuthInstance> {
   if (!authInstance) {
     authInstance = await authBuilder();
   }
-  return authInstance!;
+  return authInstance;
 }
 
-// Export auth for backward compatibility with existing API routes
-export const auth = await authBuilder();
+// Lazy proxy — auth is not initialized at module load (safe for CF Workers).
+// Supports auth.handler(req) and auth.api.method(...) call patterns.
+export const auth: AuthInstance = new Proxy({} as AuthInstance, {
+  has() { return true; },
+  get(_, prop) {
+    const key = prop as string;
+    return new Proxy(
+      async (...args: unknown[]) => {
+        const instance = await initAuth();
+        return (instance as any)[key](...args);
+      },
+      {
+        has() { return true; },
+        get(_, subProp) {
+          const sub = subProp as string;
+          if (sub === "then" || sub === "catch" || sub === "finally") return undefined;
+          return async (...args: unknown[]) => {
+            const instance = await initAuth();
+            return (instance as any)[key][sub](...args);
+          };
+        },
+      },
+    );
+  },
+});

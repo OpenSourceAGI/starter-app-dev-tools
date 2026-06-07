@@ -1,0 +1,10 @@
+{
+  "name": "template-fumadocs",
+  "compatibility_date": "2025-01-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": ".vinext/worker.js",
+  "assets": {
+    "directory": ".vinext/assets",
+    "binding": "ASSETS"
+  }
+}

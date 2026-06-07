@@ -18,6 +18,7 @@
     "dist"
   ],
   "scripts": {
+    "start": "vite --config vite.demo.config.ts",
     "ship": "npx standard-version --release-as patch; rm CHANGELOG.md; npm publish",
     "build": "vite build && tsc --emitDeclarationOnly --declaration --declarationDir dist",
     "dev": "vite --config vite.demo.config.ts",

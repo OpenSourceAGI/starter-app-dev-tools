@@ -5,7 +5,7 @@ import { Analytics } from "@vercel/analytics/next"
 import { ThemeProvider } from "@/components/theme/theme-provider"
 import { Toaster } from "sonner"
 import "./globals.css"
-import "../styles/themes-shadcn.css"
+import "shadcn-theme-menu/themes.css"
 import { APP_NAME, APP_DESCRIPTION } from "@/lib/constants";
 
 export const metadata: Metadata = {
