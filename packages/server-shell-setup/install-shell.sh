@@ -216,9 +216,7 @@ install_fish() {
     esac
     # change default shell to fish
     sudo chsh -s $(which fish) $USER
-    # might ask for password
-    chsh -s $(which fish) $USER
-
+    
     # Setup fish plugins
     print_msg "$YELLOW" "Setting up Fish plugins (oh-my-fish, fzf, z, pisces)"
     curl https://raw.githubusercontent.com/oh-my-fish/oh-my-fish/master/bin/install >omf-install.sh
