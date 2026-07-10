@@ -579,13 +579,24 @@ install_node() {
 
         bash -c "$(curl -fsSL https://get.volta.sh)"
 
-        # Source bashrc to make volta available
-        source ~/.bashrc
+        # Make Volta available in the current session.
+        # Sourcing ~/.bashrc does not work here: in non-interactive shells
+        # (e.g. piped "wget ... | bash") .bashrc returns before Volta's
+        # PATH exports, leaving npm/node unavailable for the rest of the script.
+        export VOLTA_HOME="$HOME/.volta"
+        export PATH="$VOLTA_HOME/bin:$PATH"
 
-        ~/.volta/bin/volta install node
-        # print_success "Node.js installed with Volta"
+        volta install node
 
-        fish -c "fish_add_path ~/.volta/bin"
+        if command_exists fish; then
+            fish -c "fish_add_path ~/.volta/bin"
+        fi
+
+        if command_exists node && command_exists npm; then
+            print_success "Node.js $(node -v) installed with Volta (npm $(npm -v))"
+        else
+            print_error "Node.js installation failed: node/npm not found on PATH"
+        fi
 
     fi
 
@@ -602,9 +613,22 @@ install_bun() {
     print_header "Installing Bun"
     print_msg "$YELLOW" "Bun is a fast JavaScript runtime, bundler, transpiler and package manager"
 
-    bash -c "$(curl -fsSL https://bun.sh/install)"
+    curl -fsSL https://bun.sh/install | bash
 
-    print_success "Bun installed"
+    # The installer only updates shell profiles; export for the current
+    # session and register with fish so bun is usable immediately.
+    export BUN_INSTALL="$HOME/.bun"
+    export PATH="$BUN_INSTALL/bin:$PATH"
+
+    if command_exists fish; then
+        fish -c "fish_add_path ~/.bun/bin"
+    fi
+
+    if command_exists bun; then
+        print_success "Bun $(bun --version) installed"
+    else
+        print_error "Bun installation failed: bun not found on PATH"
+    fi
 }
 
 
