@@ -54,7 +54,7 @@ wget -qO- tinyurl.com/shellsetup | bash -s -- starship,docker,node
 | `nushell` | Data-oriented shell that handles structured data natively |
 | `nvim` | Neovim with [NvChad](https://nvchad.com) config pre-installed |
 | `helix` | Modal terminal editor written in Rust, no config needed |
-| `node` | Node.js via [Volta](https://volta.sh) version manager (no sudo issues); also installs pnpm, yarn, git0, vite, turbo |
+| `node` | Node.js via [Volta](https://volta.sh) version manager (no sudo issues); also installs pnpm, yarn, git0, vite, turbo, and bun |
 | `bun` | Fast JavaScript runtime, bundler, and package manager |
 | `docker` | Docker with rootless mode enabled |
 | `starship` | Cross-shell prompt configured for bash, fish, and nushell |

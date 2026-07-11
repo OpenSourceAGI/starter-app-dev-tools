@@ -16,7 +16,7 @@
 #   - nushell: Data-oriented shell with structured data handling
 #   - nvim: Neovim text editor with NvChad configuration
 #   - helix: Modern terminal-based text editor with Rust
-#   - node: Node.js via Volta version manager
+#   - node: Node.js via Volta version manager (also installs bun)
 #   - bun: Fast JavaScript runtime, bundler, transpiler and package manager
 #   - pacstall: Package manager for Debian/Ubuntu (like AUR for Arch)
 #   - docker: Docker container platform with rootless mode
@@ -937,6 +937,12 @@ parse_args() {
 install_components() {
     # Always install base dependencies
     install_base_deps
+
+    # Bun pairs with Node.js; make sure it's installed whenever Node.js is,
+    # even if "node" was selected on its own rather than via "all"
+    if [[ " ${COMPONENTS[*]} " == *" node "* ]] && [[ " ${COMPONENTS[*]} " != *" bun "* ]]; then
+        COMPONENTS+=("bun")
+    fi
 
     # Install selected components
     for component in "${COMPONENTS[@]}"; do
