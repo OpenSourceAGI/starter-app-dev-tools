@@ -1,33 +1,18 @@
 "use server";
 
-import { Resend } from "resend";
+import { sendEmail, type EmailServiceBinding } from "./send-email";
 
 export async function sendTeamInvitationEmail(
   email: string,
   teamName: string,
-  inviterId: string
+  inviterId: string,
+  emailBinding?: EmailServiceBinding
 ) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const signupUrl = `${appUrl}/auth/signup?email=${encodeURIComponent(email)}`;
 
-  // If no Resend API key is configured, just log the invitation
-  if (!process.env.RESEND_API_KEY) {
-    console.log(`
-      ============================================
-      TEAM INVITATION (Email not configured)
-      ============================================
-      To: ${email}
-      Team: ${teamName}
-      Signup URL: ${signupUrl}
-      ============================================
-    `);
-    return { success: true };
-  }
-
-  const resend = new Resend(process.env.RESEND_API_KEY);
-
   try {
-    await resend.emails.send({
+    await sendEmail(emailBinding || null, {
       from: process.env.EMAIL_FROM || "noreply@yourdomain.com",
       to: email,
       subject: `You've been invited to join ${teamName}`,

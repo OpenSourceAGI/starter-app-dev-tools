@@ -10,7 +10,7 @@ import {
   DocsTitle,
 } from 'fumadocs-ui/page';
 import { notFound } from 'next/navigation';
-import { getMDXComponents } from '@/mdx-components';
+import { getMDXComponents } from '@/lib/fumadocs/mdx-components';
 import type { Metadata } from 'next';
 import { AskAIDropdown } from '@/components/fumadocs/ai/ask-ai-dropdown';
 import { LLMCopyButton } from '@/components/fumadocs/ai/llm-copy-button';

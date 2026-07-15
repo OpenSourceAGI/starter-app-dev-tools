@@ -18,6 +18,11 @@
       "database_id": "9f45c816-5b19-43e0-8e4e-9edbd6c115b0",
     },
   ],
+  "send_email": [
+    {
+      "name": "EMAIL"
+    }
+  ],
   "env": {
     "production": {
       "keep_vars": true,
@@ -30,6 +35,11 @@
           "database_name": "qwksearch",
           "database_id": "9f45c816-5b19-43e0-8e4e-9edbd6c115b0",
         },
+      ],
+      "send_email": [
+        {
+          "name": "EMAIL"
+        }
       ],
     },
   },

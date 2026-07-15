@@ -1,23 +1,22 @@
-import { createClient } from "@libsql/client"
-import { drizzle } from "drizzle-orm/libsql"
-import * as schema from "./schema"
-import * as relations from "./relations"
+import { drizzle as drizzleD1 } from "drizzle-orm/d1";
+import * as schema from "./schema";
+import * as relations from "./relations";
 
-type DbInstance = ReturnType<typeof drizzle>;
+type DbInstance = ReturnType<typeof drizzleD1>;
 let _db: DbInstance | null = null;
 
 function getDb(): DbInstance {
   if (!_db) {
-    const client = createClient({
-      url: process.env.TURSO_DATABASE_URL || "file:./local.db",
-      authToken: process.env.TURSO_AUTH_TOKEN,
-    });
-    _db = drizzle(client, { schema: { ...schema, ...relations } });
+    const env = (globalThis as any).env;
+    if (!env?.DB) {
+      throw new Error("Cloudflare D1 database binding (DB) not found. Ensure wrangler.jsonc is properly configured.");
+    }
+    console.log("[getDB] Using Cloudflare D1 database");
+    _db = drizzleD1(env.DB, { schema: { ...schema, ...relations } });
   }
   return _db;
 }
 
-// Lazy proxy — createClient is not called until first db access (safe for CF Workers module init)
 export const db = new Proxy({} as DbInstance, {
   get(_, prop) {
     return (getDb() as any)[prop];
