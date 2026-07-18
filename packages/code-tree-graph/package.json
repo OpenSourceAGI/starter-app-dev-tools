@@ -1,6 +1,6 @@
 {
   "name": "code-tree-graph",
-  "version": "0.1.7",
+  "version": "0.1.5",
   "description": "Code dependency graph and file tree visualization components",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -10,16 +10,6 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs",
       "types": "./dist/index.d.ts"
-    },
-    "./components/code-tree/filetree-view": {
-      "import": "./dist/components/code-tree/filetree-view.js",
-      "require": "./dist/components/code-tree/filetree-view.cjs",
-      "types": "./dist/components/code-tree/filetree-view.d.ts"
-    },
-    "./components/codegraph/dependency-graph": {
-      "import": "./dist/components/codegraph/dependency-graph.js",
-      "require": "./dist/components/codegraph/dependency-graph.cjs",
-      "types": "./dist/components/codegraph/dependency-graph.d.ts"
     },
     "./dist/index.css": "./dist/index.css"
   },

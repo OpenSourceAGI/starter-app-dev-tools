@@ -1,14 +1,17 @@
 <p align="center">
     <img src="https://i.imgur.com/5lsiepL.png" width="300" >
+    <br />
+<b>💍One Code to rule them all — and in the cloud compile them. </b>
 </p>
 
-> **💍One Code to rule them all — and in the cloud compile them.**
 
-[DEMO](https://appdemo-dev-tools-mu.vercel.app)
 
 # react-native-app-buttons
 
 React badge components for app store and platform download links. Badges ship as bundled assets — no CDN required.
+[DEMO](https://appdemo-dev-tools-mu.vercel.app)
+
+![screen](https://i.imgur.com/VNhYSmF.png)
 
 ## Install
 

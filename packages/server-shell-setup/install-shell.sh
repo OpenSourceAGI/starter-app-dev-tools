@@ -6,17 +6,17 @@
 # Use interactive menu to install top dev tools and shell.
 # Systems Supported: Android (Termux), macOS, Ubuntu/Debian, Fedora, Arch, Alpine
 #
-# Usage: wget -qO- https://raw.githubusercontent.com/OpenSourceAGI/starter-app-dev-tools/refs/heads/master/packages/server-shell-setup/install-shell.sh | bash
-#  Headless:
-#  wget -qO- https://raw.githubusercontent.com/OpenSourceAGI/starter-app-dev-tools/refs/heads/master/packages/server-shell-setup/install-shell.sh | bash -s -- "all"
+# Usage: bash -c "$( wget -q https://raw.githubusercontent.com/OpenSourceAGI/appdemo-starter-template/refs/heads/master/packages/server-shell-setup/install-shell.sh -O -)"
+#  Headless: 
+#  wget -qO- https://raw.githubusercontent.com/OpenSourceAGI/appdemo-starter-template/refs/heads/master/packages/server-shell-setup/install-shell.sh | bash -s -- "all"
 # SSH With Password:
-#  wget -qO- https://raw.githubusercontent.com/OpenSourceAGI/starter-app-dev-tools/refs/heads/master/packages/server-shell-setup/install-shell.sh | bash -s -- ssh
+#  wget -qO- https://raw.githubusercontent.com/OpenSourceAGI/appdemo-starter-template/refs/heads/master/packages/server-shell-setup/install-shell.sh | bash -s -- ssh
 # Available components:
 #   - fish: Modern shell with auto-suggestions and improved syntax highlighting
 #   - nushell: Data-oriented shell with structured data handling
 #   - nvim: Neovim text editor with NvChad configuration
 #   - helix: Modern terminal-based text editor with Rust
-#   - node: Node.js via Volta version manager (also installs bun)
+#   - node: Node.js via Volta version manager
 #   - bun: Fast JavaScript runtime, bundler, transpiler and package manager
 #   - pacstall: Package manager for Debian/Ubuntu (like AUR for Arch)
 #   - docker: Docker container platform with rootless mode
@@ -216,7 +216,9 @@ install_fish() {
     esac
     # change default shell to fish
     sudo chsh -s $(which fish) $USER
-    
+    # might ask for password
+    chsh -s $(which fish) $USER
+
     # Setup fish plugins
     print_msg "$YELLOW" "Setting up Fish plugins (oh-my-fish, fzf, z, pisces)"
     curl https://raw.githubusercontent.com/oh-my-fish/oh-my-fish/master/bin/install >omf-install.sh
@@ -330,11 +332,9 @@ end
 
 
 
-    # Add setup function to re-run this installer.
-    # Must be fish syntax: bash-style "$( ... )" makes fish error with
-    # "command substitutions not allowed here", so pipe to bash instead.
+    # Add apt install as in
     echo 'function setup
-        wget -qO- https://raw.githubusercontent.com/OpenSourceAGI/starter-app-dev-tools/refs/heads/master/packages/server-shell-setup/install-shell.sh | bash
+        bash -c "$( wget -q https://raw.githubusercontent.com/vtempest/server-shell-setup/refs/heads/master/install-shell.sh -O -)"
     end' >~/.config/fish/functions/setup.fish
 
 
@@ -581,24 +581,13 @@ install_node() {
 
         bash -c "$(curl -fsSL https://get.volta.sh)"
 
-        # Make Volta available in the current session.
-        # Sourcing ~/.bashrc does not work here: in non-interactive shells
-        # (e.g. piped "wget ... | bash") .bashrc returns before Volta's
-        # PATH exports, leaving npm/node unavailable for the rest of the script.
-        export VOLTA_HOME="$HOME/.volta"
-        export PATH="$VOLTA_HOME/bin:$PATH"
+        # Source bashrc to make volta available
+        source ~/.bashrc
 
-        volta install node
+        ~/.volta/bin/volta install node
+        # print_success "Node.js installed with Volta"
 
-        if command_exists fish; then
-            fish -c "fish_add_path ~/.volta/bin"
-        fi
-
-        if command_exists node && command_exists npm; then
-            print_success "Node.js $(node -v) installed with Volta (npm $(npm -v))"
-        else
-            print_error "Node.js installation failed: node/npm not found on PATH"
-        fi
+        fish -c "fish_add_path ~/.volta/bin"
 
     fi
 
@@ -615,22 +604,9 @@ install_bun() {
     print_header "Installing Bun"
     print_msg "$YELLOW" "Bun is a fast JavaScript runtime, bundler, transpiler and package manager"
 
-    curl -fsSL https://bun.sh/install | bash
+    bash -c "$(curl -fsSL https://bun.sh/install)"
 
-    # The installer only updates shell profiles; export for the current
-    # session and register with fish so bun is usable immediately.
-    export BUN_INSTALL="$HOME/.bun"
-    export PATH="$BUN_INSTALL/bin:$PATH"
-
-    if command_exists fish; then
-        fish -c "fish_add_path ~/.bun/bin"
-    fi
-
-    if command_exists bun; then
-        print_success "Bun $(bun --version) installed"
-    else
-        print_error "Bun installation failed: bun not found on PATH"
-    fi
+    print_success "Bun installed"
 }
 
 
@@ -773,67 +749,6 @@ install_systeminfo() {
     print_success "System info greeting installed"
 }
 
-# Check that root and user passwords are set; offer to set them if not.
-# Passwords entered here are kept in ROOT_PASS/USER_PASS and reused by the
-# rest of the script (sudo credential cache, ssh setup) so the user only
-# types them once.
-check_passwords() {
-    CURRENT_USER=$(whoami)
-
-    # Cache sudo credentials first; passwd -S needs root to read /etc/shadow
-    sudo -v 2>/dev/null
-
-    local root_status user_status
-    root_status=$(sudo passwd -S root 2>/dev/null | awk '{print $2}')
-    user_status=$(sudo passwd -S "$CURRENT_USER" 2>/dev/null | awk '{print $2}')
-
-    # Second field of passwd -S: P/PS = password set, L/LK = locked, NP = none
-    if [[ "$root_status" == P* && "$user_status" == P* ]]; then
-        return
-    fi
-
-    print_header "Account Password Setup"
-    [[ "$root_status" != P* ]] && print_msg "$YELLOW" "The root password is not set."
-    [[ "$user_status" != P* ]] && print_msg "$YELLOW" "The password for ${CURRENT_USER} is not set."
-    print_msg "$YELLOW" "Root and user passwords need to be set before continuing."
-
-    # -e /dev/tty is true even without a controlling terminal; test opening it
-    if ! { : < /dev/tty; } 2>/dev/null; then
-        print_error "No terminal available to enter a password. Set them manually with: sudo passwd root && sudo passwd ${CURRENT_USER}"
-        return
-    fi
-
-    local same_pass
-    read -rp "Use the same password for both root and ${CURRENT_USER}? [Y/n]: " same_pass < /dev/tty
-
-    if [[ "$same_pass" =~ ^[Nn] ]]; then
-        read -srp "Enter new root password: " ROOT_PASS < /dev/tty
-        echo ""
-        read -srp "Enter new password for ${CURRENT_USER}: " USER_PASS < /dev/tty
-        echo ""
-    else
-        read -srp "Enter new password (used for both root and ${CURRENT_USER}): " USER_PASS < /dev/tty
-        echo ""
-        ROOT_PASS="$USER_PASS"
-    fi
-
-    if [ -z "$USER_PASS" ]; then
-        print_error "Empty password entered; skipping password setup"
-        return
-    fi
-
-    if [[ "$root_status" != P* ]]; then
-        echo "root:${ROOT_PASS}" | sudo chpasswd && print_success "Root password set"
-    fi
-    if [[ "$user_status" != P* ]]; then
-        echo "${CURRENT_USER}:${USER_PASS}" | sudo chpasswd && print_success "Password set for ${CURRENT_USER}"
-    fi
-
-    # Refresh the sudo credential cache with the new password so the rest
-    # of the script can keep using sudo without prompting again
-    echo "$USER_PASS" | sudo -S -v 2>/dev/null
-}
-
 # Enable sudo without password
 enable_sudo_without_password() {
     print_header "Enable Sudo Without Password"
@@ -938,12 +853,6 @@ install_components() {
     # Always install base dependencies
     install_base_deps
 
-    # Bun pairs with Node.js; make sure it's installed whenever Node.js is,
-    # even if "node" was selected on its own rather than via "all"
-    if [[ " ${COMPONENTS[*]} " == *" node "* ]] && [[ " ${COMPONENTS[*]} " != *" bun "* ]]; then
-        COMPONENTS+=("bun")
-    fi
-
     # Install selected components
     for component in "${COMPONENTS[@]}"; do
         case "$component" in
@@ -977,37 +886,29 @@ install_components() {
 
 
 # Enable SSH with password authentication
-enable_ssh_with_password() {
-    print_header "Enabling SSH with Password Authentication"
-    print_msg "$YELLOW" "This is useful for AWS EC2 instances where password authentication is disabled by default"
+# enable_ssh_with_password() {
+#     print_header "Enabling SSH with Password Authentication"
+#     print_msg "$YELLOW" "This is useful for AWS EC2 instances where password authentication is disabled by default"
 
-    CURRENT_USER=$(whoami)
+#     read -p "Enter root password: " ROOT_PASS
+#     read -p "Enter user password: " USER_PASS
+#     read -p "Enter username: " USER
 
-    # Reuse passwords collected by check_passwords; only prompt if missing
-    if [ -z "$ROOT_PASS" ]; then
-        read -srp "Enter root password: " ROOT_PASS < /dev/tty
-        echo ""
-    fi
-    if [ -z "$USER_PASS" ]; then
-        read -srp "Enter password for ${CURRENT_USER}: " USER_PASS < /dev/tty
-        echo ""
-    fi
+#     echo "root:$ROOT_PASS" | sudo chpasswd
+#     echo "$USER:$USER_PASS" | sudo chpasswd
 
-    echo "root:${ROOT_PASS}" | sudo chpasswd
-    echo "${CURRENT_USER}:${USER_PASS}" | sudo chpasswd
+#     sudo sed -re 's/^#?[[:space:]]*(PasswordAuthentication)[[:space:]]+no/\1 yes/' -i.bak /etc/ssh/sshd_config
 
-    sudo sed -re 's/^#?[[:space:]]*(PasswordAuthentication)[[:space:]]+no/\1 yes/' -i.bak /etc/ssh/sshd_config
+#     if [ -d "/etc/ssh/sshd_config.d/" ]; then
+#         for file in /etc/ssh/sshd_config.d/*; do
+#             sudo sed -re 's/^#?[[:space:]]*(PasswordAuthentication)[[:space:]]+no/\1 yes/' -i.bak "$file"
+#         done
+#     fi
 
-    if [ -d "/etc/ssh/sshd_config.d/" ]; then
-        for file in /etc/ssh/sshd_config.d/*; do
-            sudo sed -re 's/^#?[[:space:]]*(PasswordAuthentication)[[:space:]]+no/\1 yes/' -i.bak "$file"
-        done
-    fi
+#     sudo service ssh restart 2>/dev/null || sudo service sshd restart
 
-    sudo service ssh restart 2>/dev/null || sudo service sshd restart
-
-    print_success "SSH password authentication enabled"
-}
+#     print_success "SSH password authentication enabled"
+# }
 
 
 # Main function
@@ -1018,9 +919,6 @@ main() {
     #     print_msg "$YELLOW" "Instead, use: sudo bash $0"
     #     exit 1
     # fi
-
-    # Verify root/user passwords are set before installing anything
-    check_passwords
 
     # Non-interactive mode with command line arguments
     if [ -n "$1" ]; then

@@ -3,11 +3,11 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { oneTap, openAPI, magicLink, anonymous } from "better-auth/plugins";
 import { db } from "../db";
 import * as schema from "../db/schema";
-import { sendEmail, type EmailServiceBinding } from "../email/send-email";
+import { Resend } from "resend";
 import { APP_NAME, APP_EMAIL, NEXT_PUBLIC_BASE_URL } from "../constants";
 import { env } from "../../env";
 
-async function authBuilder(emailBinding?: EmailServiceBinding) {
+async function authBuilder() {
   return betterAuth({
     baseURL: NEXT_PUBLIC_BASE_URL || "http://localhost:3000",
     database: drizzleAdapter(db, {
@@ -30,7 +30,8 @@ async function authBuilder(emailBinding?: EmailServiceBinding) {
       anonymous(),
       magicLink({
         sendMagicLink: async ({ email, url }) => {
-          await sendEmail(emailBinding || null, {
+          const resend = new Resend(process.env.AUTH_RESEND_KEY);
+          await resend.emails.send({
             from: `${APP_NAME} <${APP_EMAIL || "noreply@example.com"}>`,
             to: email,
             subject: `Sign in to ${APP_NAME}`,
@@ -48,9 +49,9 @@ type AuthInstance = Awaited<ReturnType<typeof authBuilder>>;
 
 let authInstance: AuthInstance | null = null;
 
-export async function initAuth(emailBinding?: EmailServiceBinding): Promise<AuthInstance> {
+export async function initAuth(): Promise<AuthInstance> {
   if (!authInstance) {
-    authInstance = await authBuilder(emailBinding);
+    authInstance = await authBuilder();
   }
   return authInstance;
 }
