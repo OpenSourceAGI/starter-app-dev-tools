@@ -3,7 +3,7 @@ FROM codercom/code-server:ubuntu
 
 LABEL org.opencontainers.image.title="vscode-cloud" \
       org.opencontainers.image.description="code-server with multi-language runtimes, AI CLIs, language servers, and R2-backed workspace persistence" \
-      org.opencontainers.image.source="https://github.com/OpenSourceAGI/appdemo-dev-tools"
+      org.opencontainers.image.source="https://github.com/OpenSourceAGI/starter-app-dev-tools"
 
 # ── System packages ───────────────────────────────────────────────────────────
 USER root

@@ -3,7 +3,7 @@
   "description": "CLI to create a Turso database and write TURSO_* env vars to .env file",
   "type": "module",
   "author": "vtempest",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "main": "create-cloud-db.js",
   "bin": {
     "create-cloud-db": "./create-cloud-db.js"
@@ -14,9 +14,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/OpenSourceAGI/appdemo-dev-tools/tree/master/packages/create-cloud-db"
+    "url": "https://github.com/OpenSourceAGI/starter-app-dev-tools/tree/master/packages/create-cloud-db"
   },
-  "homepage": "https://github.com/OpenSourceAGI/appdemo-dev-tools/tree/master/packages/create-cloud-db",
+  "homepage": "https://github.com/OpenSourceAGI/starter-app-dev-tools/tree/master/packages/create-cloud-db",
   "keywords": [
     "turso",
     "database",

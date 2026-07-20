@@ -1,6 +1,6 @@
 {
   "name": "sms-verification-api",
-  "version": "0.9.12",
+  "version": "0.9.13",
   "description": "SMS Phone Verification API using AWS SNS HTTP API with Hono server on Cloudflare Workers",
   "main": "src/verify-phone.ts",
   "type": "module",
@@ -67,7 +67,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/OpenSourceAGI/appdemo-dev-tools/tree/master/packages/verify-phone-sms"
+    "url": "https://github.com/OpenSourceAGI/starter-app-dev-tools/tree/master/packages/verify-phone-sms"
   },
-  "homepage": "https://github.com/OpenSourceAGI/appdemo-dev-tools/tree/master/packages/verify-phone-sms"
+  "homepage": "https://github.com/OpenSourceAGI/starter-app-dev-tools/tree/master/packages/verify-phone-sms"
 }

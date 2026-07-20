@@ -1,12 +1,12 @@
 {
   "name": "cloudflare-to-claude-fix",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "https://github.com/OpenSourceAGI/appdemo-dev-tools/tree/master/packages/cloudflare-to-claude-fix"
+    "url": "https://github.com/OpenSourceAGI/starter-app-dev-tools/tree/master/packages/cloudflare-to-claude-fix"
   },
-  "homepage": "https://github.com/OpenSourceAGI/appdemo-dev-tools/tree/master/packages/cloudflare-to-claude-fix",
+  "homepage": "https://github.com/OpenSourceAGI/starter-app-dev-tools/tree/master/packages/cloudflare-to-claude-fix",
   "scripts": {
     "deploy": "wrangler deploy",
     "dev": "wrangler dev",

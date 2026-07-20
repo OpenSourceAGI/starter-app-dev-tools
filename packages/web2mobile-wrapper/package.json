@@ -35,8 +35,8 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/OpenSourceAGI/appdemo-dev-tools/tree/master/packages/web2mobile-wrapper"
+    "url": "https://github.com/OpenSourceAGI/starter-app-dev-tools/tree/master/packages/web2mobile-wrapper"
   },
-  "homepage": "https://github.com/OpenSourceAGI/appdemo-dev-tools/tree/master/packages/web2mobile-wrapper",
+  "homepage": "https://github.com/OpenSourceAGI/starter-app-dev-tools/tree/master/packages/web2mobile-wrapper",
   "private": true
 }

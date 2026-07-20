@@ -1,14 +1,14 @@
 {
   "name": "api2ai",
-  "version": "0.2.9",
+  "version": "0.2.10",
   "description": "Generate production-ready MCP servers from any OpenAPI specification using the highly-used and convenient [mcp-use](https://mcp-use.com) framework",
   "license": "rights.institute/prosper",
   "author": "vtempest",
   "repository": {
     "type": "git",
-    "url": "https://github.com/OpenSourceAGI/appdemo-dev-tools/tree/master/packages/api2ai-mcp-generator"
+    "url": "https://github.com/OpenSourceAGI/starter-app-dev-tools/tree/master/packages/api2ai-mcp-generator"
   },
-  "homepage": "https://github.com/OpenSourceAGI/appdemo-dev-tools/tree/master/packages/api2ai-mcp-generator",
+  "homepage": "https://github.com/OpenSourceAGI/starter-app-dev-tools/tree/master/packages/api2ai-mcp-generator",
   "exports": {
     ".": {
       "import": "./dist/index.mjs",

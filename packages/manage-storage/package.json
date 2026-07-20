@@ -1,6 +1,6 @@
 {
   "name": "manage-storage",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "description": "Storage manager supporting AWS S3, Backblaze B2, and Cloudflare R2 with automatic provider detection",
   "main": "./dist/manage-storage.js",
   "module": "./dist/manage-storage.js",
@@ -24,9 +24,9 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/OpenSourceAGI/appdemo-dev-tools/tree/master/packages/manage-storage"
+    "url": "https://github.com/OpenSourceAGI/starter-app-dev-tools/tree/master/packages/manage-storage"
   },
-  "homepage": "https://github.com/OpenSourceAGI/appdemo-dev-tools/tree/master/packages/manage-storage",
+  "homepage": "https://github.com/OpenSourceAGI/starter-app-dev-tools/tree/master/packages/manage-storage",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.965.0",
     "dotenv": "^17.2.3"
