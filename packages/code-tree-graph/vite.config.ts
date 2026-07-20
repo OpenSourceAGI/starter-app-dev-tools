@@ -25,8 +25,8 @@ export default defineConfig({
         "react/jsx-runtime",
         "next",
         "next/navigation",
-        "fumadocs-core",
-        "fumadocs-core/link",
+        // match fumadocs-core and all of its subpath entries (e.g. fumadocs-core/link)
+        /^fumadocs-core(\/.*)?$/,
         // keep large server-only deps external so consumers can tree-shake or SSR them
         "@typescript-eslint/typescript-estree",
         "mermaid",
