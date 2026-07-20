@@ -2,7 +2,7 @@
   "name": "template-fumadocs",
   "description": "FumaDocs Starter - Search, Docs Sidebar, API Docs",
   "version": "1.1.0",
-  "private": true,
+  "private": false,
   "scripts": {
     "dev": "rm -rf .next/; open-ready next dev  --turbo",
     "build": "next build",
@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@fumadocs/mdx-remote": "^1.4.3",
+    "@next/swc-linux-x64-gnu": "^16.2.10",
     "@orama/orama": "^3.1.16",
     "@radix-ui/react-collapsible": "^1.1.12",
     "@radix-ui/react-dialog": "^1.1.15",
@@ -21,12 +22,11 @@
     "@typescript-eslint/typescript-estree": "^8.56.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "code-graph": "file:../../packages/code-tree-graph",
-    "fumadocs-core": "16.6.10",
-    "fumadocs-mdx": "^14.0.3",
-    "fumadocs-openapi": "^10.0.11",
+    "fumadocs-core": "^16.11.5",
+    "fumadocs-mdx": "^15.2.0",
+    "fumadocs-openapi": "^11.2.2",
     "fumadocs-typescript": "^4.0.13",
-    "fumadocs-ui": "^16.1.0",
+    "fumadocs-ui": "^16.11.5",
     "fuse.js": "^7.1.0",
     "highlight.js": "^11.11.1",
     "jszip": "^3.10.1",
@@ -35,9 +35,9 @@
     "mermaid": "^11.12.3",
     "next": "^16.1.4",
     "next-themes": "^0.4.6",
-    "shadcn-theme-menu": "^1.1.12",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
+    "shadcn-theme-menu": "^1.1.12",
     "shiki": "^3.17.0",
     "svg-toolbelt": "^0.6.1",
     "tailwind-merge": "^3.5.0",
@@ -55,6 +55,7 @@
     "postcss": "^8.5.6",
     "rimraf": "^6.1.2",
     "tailwindcss": "^4.1.17",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "wrangler": "^3.0.0"
   }
 }
