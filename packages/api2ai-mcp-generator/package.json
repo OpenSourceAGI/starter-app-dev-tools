@@ -6,9 +6,9 @@
   "author": "vtempest",
   "repository": {
     "type": "git",
-    "url": "https://github.com/OpenSourceAGI/appdemo-dev-tools/tree/master/packages/api2ai-mcp-generator"
+    "url": "https://github.com/OpenSourceAGI/starter-app-dev-tools/tree/master/packages/api2ai-mcp-generator"
   },
-  "homepage": "https://github.com/OpenSourceAGI/appdemo-dev-tools/tree/master/packages/api2ai-mcp-generator",
+  "homepage": "https://github.com/OpenSourceAGI/starter-app-dev-tools/tree/master/packages/api2ai-mcp-generator",
   "exports": {
     ".": {
       "import": "./dist/index.mjs",
