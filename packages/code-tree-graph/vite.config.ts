@@ -9,7 +9,7 @@ export default defineConfig({
     dts({
       include: ["index.ts", "components/**/*", "lib/**/*", "utils.ts", "actions.ts"],
       exclude: ["**/*.test.*", "**/*.spec.*"],
-      rollupTypes: true,
+      rollupTypes: false,
     }),
   ],
   build: {
@@ -26,6 +26,7 @@ export default defineConfig({
         "next",
         "next/navigation",
         "fumadocs-core",
+        "fumadocs-core/link",
         // keep large server-only deps external so consumers can tree-shake or SSR them
         "@typescript-eslint/typescript-estree",
         "mermaid",
