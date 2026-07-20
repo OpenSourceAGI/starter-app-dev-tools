@@ -14,9 +14,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/OpenSourceAGI/appdemo-dev-tools/tree/master/packages/create-cloud-db"
+    "url": "https://github.com/OpenSourceAGI/starter-app-dev-tools/tree/master/packages/create-cloud-db"
   },
-  "homepage": "https://github.com/OpenSourceAGI/appdemo-dev-tools/tree/master/packages/create-cloud-db",
+  "homepage": "https://github.com/OpenSourceAGI/starter-app-dev-tools/tree/master/packages/create-cloud-db",
   "keywords": [
     "turso",
     "database",

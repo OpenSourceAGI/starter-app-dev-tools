@@ -39,7 +39,7 @@
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "https://github.com/OpenSourceAGI/appdemo-dev-tools/tree/master/packages/git0-repo-downloader"
+        "url": "https://github.com/OpenSourceAGI/starter-app-dev-tools/tree/master/packages/git0-repo-downloader"
     },
-    "homepage": "https://github.com/OpenSourceAGI/appdemo-dev-tools/tree/master/packages/git0-repo-downloader"
+    "homepage": "https://github.com/OpenSourceAGI/starter-app-dev-tools/tree/master/packages/git0-repo-downloader"
 }
