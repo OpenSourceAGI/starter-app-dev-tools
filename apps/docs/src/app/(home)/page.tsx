@@ -142,7 +142,7 @@ function PackageCard({
             <div className="flex items-center justify-between gap-2">
               <h3 className="font-semibold text-foreground truncate text-sm">{pkg.name}</h3>
               <a
-                href={`https://github.com/OpenSourceAGI/appdemo-dev-tools/tree/main/${pkg.path}`}
+                href={`https://github.com/OpenSourceAGI/starter-app-dev-tools/tree/main/${pkg.path}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-secondary shrink-0"
@@ -441,7 +441,7 @@ export default function DocsHomepage() {
               Docs
             </a>
             <a
-              href="https://github.com/OpenSourceAGI/appdemo-dev-tools"
+              href="https://github.com/OpenSourceAGI/starter-app-dev-tools"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-secondary transition-colors"
@@ -535,7 +535,7 @@ export default function DocsHomepage() {
             {/* CTA */}
             <div className="mt-8 flex justify-center gap-3">
               <a
-                href="https://github.com/OpenSourceAGI/appdemo-dev-tools"
+                href="https://github.com/OpenSourceAGI/starter-app-dev-tools"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 rounded-lg bg-foreground text-background px-5 py-2.5 text-sm font-medium hover:bg-foreground/90 transition-colors"
@@ -684,7 +684,7 @@ export default function DocsHomepage() {
                 Discord
               </a>
               <a
-                href="https://github.com/OpenSourceAGI/appdemo-dev-tools/discussions"
+                href="https://github.com/OpenSourceAGI/starter-app-dev-tools/discussions"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"

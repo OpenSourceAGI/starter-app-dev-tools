@@ -1,6 +1,6 @@
 {
   "name": "about-system",
-  "version": "0.0.32",
+  "version": "0.0.35",
   "description": "A Node.js script to display key system information with emojis. Cross-platform support for Windows, macOS, and Linux with customizable output and caching.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -56,9 +56,9 @@
   "license": "rights.institute/prosper",
   "repository": {
     "type": "git",
-    "url": "https://github.com/OpenSourceAGI/appdemo-dev-tools/tree/master/packages/about-system-info"
+    "url": "https://github.com/OpenSourceAGI/starter-app-dev-tools/tree/master/packages/about-system-info"
   },
-  "homepage": "https://github.com/OpenSourceAGI/appdemo-dev-tools/tree/master/packages/about-system-info",
+  "homepage": "https://github.com/OpenSourceAGI/starter-app-dev-tools/tree/master/packages/about-system-info",
   "files": [
     "dist/**/*",
     "src/**/*.ts",

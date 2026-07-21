@@ -1,10 +1,2 @@
-import { defineConfig } from "vite";
-import vinext from "vinext";
-import { cloudflare } from "@cloudflare/vite-plugin";
-
-export default defineConfig({
-  plugins: [
-    cloudflare(),
-    vinext(),
-  ],
-});
+// Vite config not used for Next.js builds
+export default {};

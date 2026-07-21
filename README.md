@@ -7,24 +7,24 @@
     <a href="https://v0.app/templates/dashboard-landing-auth-billing-teams-docs-themes-ExDfusFzX6P"> 🎨 v0 Template </a>
 </h3>
 <p align="center">
-     <a href="https://github.com/OpenSourceAGI/appdemo-dev-tools/discussions">
-     <img alt="GitHub Stars" src="https://img.shields.io/github/stars/OpenSourceAGI/appdemo-dev-tools" /></a>
+     <a href="https://github.com/OpenSourceAGI/starter-app-dev-tools/discussions">
+     <img alt="GitHub Stars" src="https://img.shields.io/github/stars/OpenSourceAGI/starter-app-dev-tools" /></a>
      <a href="https://discord.gg/SJdBqBz3tV">
         <img src="https://img.shields.io/discord/1110227955554209923.svg?label=Chat&logo=Discord&colorB=7289da&style=flat"
             alt="Join Discord" />
     </a>
-    <a href="https://github.com/OpenSourceAGI/appdemo-dev-tools/discussions">
+    <a href="https://github.com/OpenSourceAGI/starter-app-dev-tools/discussions">
     <img alt="GitHub Discussions"
-        src="https://img.shields.io/github/discussions/OpenSourceAGI/appdemo-dev-tools" />
+        src="https://img.shields.io/github/discussions/OpenSourceAGI/starter-app-dev-tools" />
     </a>
-    <a href="https://codespaces.new/OpenSourceAGI/appdemo-dev-tools">
+    <a href="https://codespaces.new/OpenSourceAGI/starter-app-dev-tools">
     <img src="https://github.com/codespaces/badge.svg" width="150" height="20" alt="GitHub Codespaces" />
     </a>
 <br />
-    <a href="https://github.com/OpenSourceAGI/appdemo-dev-tools/pulse" alt="Activity">
-        <img src="https://img.shields.io/github/commit-activity/m/OpenSourceAGI/appdemo-dev-tools" />
+    <a href="https://github.com/OpenSourceAGI/starter-app-dev-tools/pulse" alt="Activity">
+        <img src="https://img.shields.io/github/commit-activity/m/OpenSourceAGI/starter-app-dev-tools" />
     </a>
-    <img src="https://img.shields.io/github/last-commit/OpenSourceAGI/appdemo-dev-tools.svg" alt="GitHub last commit" />
+    <img src="https://img.shields.io/github/last-commit/OpenSourceAGI/starter-app-dev-tools.svg" alt="GitHub last commit" />
     <a href="https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request">
         <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome" />
     </a>

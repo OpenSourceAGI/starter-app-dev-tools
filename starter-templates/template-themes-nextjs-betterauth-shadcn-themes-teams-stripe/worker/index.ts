@@ -21,15 +21,6 @@ interface Env {
       };
     };
   };
-  EMAIL: {
-    send: (message: {
-      from: string;
-      to: string | string[];
-      subject: string;
-      text?: string;
-      html?: string;
-    }) => Promise<{ id: string }>;
-  };
 }
 
 interface ExecutionContext {
@@ -45,9 +36,6 @@ interface ExecutionContext {
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-    // Make Cloudflare bindings available to the app via globalThis
-    (globalThis as any).env = env;
-
     // Wire up KV-backed ISR cache. The vinext RSC entry automatically
     // registers ctx in ALS so background KV puts use waitUntil — without
     // this every request would return MISS.

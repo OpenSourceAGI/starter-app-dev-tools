@@ -3,7 +3,7 @@ FROM codercom/code-server:ubuntu
 
 LABEL org.opencontainers.image.title="vscode-cloud" \
       org.opencontainers.image.description="code-server with multi-language runtimes, AI CLIs, language servers, and R2-backed workspace persistence" \
-      org.opencontainers.image.source="https://github.com/OpenSourceAGI/appdemo-dev-tools"
+      org.opencontainers.image.source="https://github.com/OpenSourceAGI/starter-app-dev-tools"
 
 # ── System packages ───────────────────────────────────────────────────────────
 USER root
@@ -74,12 +74,6 @@ RUN echo "user_allow_other" >> /etc/fuse.conf
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
   && apt-get install -y --no-install-recommends nodejs \
   && rm -rf /var/lib/apt/lists/*
-
-# ── Bun ───────────────────────────────────────────────────────────────────────
-# Installed system-wide (BUN_INSTALL=/usr/local) so it's on PATH for every user,
-# same as the npm globals below via NPM_CONFIG_PREFIX.
-RUN curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr/local bash \
-  && chmod -R a+rx /usr/local/bin/bun
 
 # ── Global npm tools ──────────────────────────────────────────────────────────
 # AI coding CLIs + TypeScript + language servers for VS Code IntelliSense
