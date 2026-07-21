@@ -135,6 +135,20 @@ export interface SystemInfo {
   bench: string;
 
   /**
+   * Detailed CPU benchmark information from Geekbench 6 multi-core
+   * Shows score, rank, and architecture type (ARM/Intel/AMD)
+   * Uses fuzzy matching to find similar CPU models
+   * Empty string if CPU not found or benchmark data unavailable
+   *
+   * @example
+   * - "Geekbench 6: 37.9k (Rank #1) - ARM" (Apple M4 Ultra)
+   * - "Geekbench 6: 20.5k (Rank #68) - Intel" (Intel Core i9)
+   * - "Geekbench 6: 19.2k (Rank #91) - AMD" (AMD Ryzen 9 7950X)
+   * - "" (CPU not in benchmark database)
+   */
+  cpu_bench_info: string;
+
+  /**
    * Device or computer model name
    * Hardware model identification when available
    * Useful for laptops, prebuilt systems, and specialized devices
