@@ -9,6 +9,7 @@ import type { InfoContext } from "../types/internal-types";
 import { IS_WINDOWS, IS_LINUX } from "../utils/platform";
 import { execCommand } from "../utils/command";
 import { getCachedValue, setCachedValue } from "../cache/cache";
+import Fuse from "fuse.js";
 
 /**
  * Gets CPU model name and specifications
@@ -190,21 +191,39 @@ export function bench(context: InfoContext): string {
   }
 
   try {
-    const benchmarkPath = new URL(
-      "../cpu-gb6-multicore-top1000.min.json",
-      import.meta.url
-    ).pathname;
+    let benchmarkPath: string;
+    const benchmarkFile = "cpu-geekbench-1k.json";
+
+    // Try multiple resolution strategies
+    if (fs.existsSync(benchmarkFile)) {
+      benchmarkPath = benchmarkFile;
+    } else if (fs.existsSync(`src/bench/${benchmarkFile}`)) {
+      benchmarkPath = `src/bench/${benchmarkFile}`;
+    } else if (fs.existsSync(`./bench/${benchmarkFile}`)) {
+      benchmarkPath = `./bench/${benchmarkFile}`;
+    } else {
+      // Last resort: construct path from import.meta.url
+      try {
+        const url = new URL(`./${benchmarkFile}`, import.meta.url);
+        benchmarkPath = url.pathname;
+        if (!fs.existsSync(benchmarkPath)) {
+          const distPath = url.pathname.substring(0, url.pathname.lastIndexOf('/'));
+          benchmarkPath = distPath + `/${benchmarkFile}`;
+        }
+      } catch {
+        benchmarkPath = benchmarkFile;
+      }
+    }
+
     const benchmarkData = fs.readFileSync(benchmarkPath, "utf8");
     const parsed = JSON.parse(benchmarkData);
     const scores = parsed.scores as [string, number, number][];
 
-    // Convert to objects for Fuse
     const cpuList = scores.map((item) => ({ name: item[0], score: item[1], rank: item[2] }));
 
-    const Fuse = require("fuse.js");
     const fuse = new Fuse(cpuList, {
       keys: ["name"],
-      threshold: 0.4,
+      threshold: 0.6,
       minMatchCharLength: 3,
     });
 
@@ -243,10 +262,30 @@ export function cpu_bench_info(context: InfoContext): string {
   }
 
   try {
-    const benchmarkPath = new URL(
-      "../cpu-geekbench-1k.json",
-      import.meta.url
-    ).pathname;
+    let benchmarkPath: string;
+    const benchmarkFile = "cpu-geekbench-1k.json";
+
+    // Try multiple resolution strategies
+    if (fs.existsSync(benchmarkFile)) {
+      benchmarkPath = benchmarkFile;
+    } else if (fs.existsSync(`src/bench/${benchmarkFile}`)) {
+      benchmarkPath = `src/bench/${benchmarkFile}`;
+    } else if (fs.existsSync(`./bench/${benchmarkFile}`)) {
+      benchmarkPath = `./bench/${benchmarkFile}`;
+    } else {
+      // Last resort: construct path from import.meta.url
+      try {
+        const url = new URL(`./${benchmarkFile}`, import.meta.url);
+        benchmarkPath = url.pathname;
+        if (!fs.existsSync(benchmarkPath)) {
+          const distPath = url.pathname.substring(0, url.pathname.lastIndexOf('/'));
+          benchmarkPath = distPath + `/${benchmarkFile}`;
+        }
+      } catch {
+        benchmarkPath = benchmarkFile;
+      }
+    }
+
     const benchmarkData = fs.readFileSync(benchmarkPath, "utf8");
     const parsed = JSON.parse(benchmarkData);
     const scores = parsed.scores as [string, number, number][];
@@ -257,10 +296,9 @@ export function cpu_bench_info(context: InfoContext): string {
       rank: item[2],
     }));
 
-    const Fuse = require("fuse.js");
     const fuse = new Fuse(cpuList, {
       keys: ["name"],
-      threshold: 0.4,
+      threshold: 0.6,
       minMatchCharLength: 3,
     });
 
