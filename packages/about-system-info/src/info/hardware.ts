@@ -224,3 +224,72 @@ export function bench(context: InfoContext): string {
   setCachedValue(context.cache, "bench", "");
   return "";
 }
+
+/**
+ * Gets detailed CPU benchmark information from Geekbench 6 data
+ * Includes score, rank, and architecture type (ARM/Intel/AMD)
+ * @param context - Info context with cache
+ * @returns Detailed benchmark info with architecture, or empty string
+ * @example "Geekbench 6: 37.9k (Rank #1) - ARM", "Geekbench 6: 20.5k (Rank #68) - Intel"
+ */
+export function cpu_bench_info(context: InfoContext): string {
+  const cached = getCachedValue(context.cache, "cpu_bench_info");
+  if (cached) return cached;
+
+  const cpuName = cpu(context);
+  if (!cpuName) {
+    setCachedValue(context.cache, "cpu_bench_info", "");
+    return "";
+  }
+
+  try {
+    const benchmarkPath = new URL(
+      "../cpu-geekbench-1k.json",
+      import.meta.url
+    ).pathname;
+    const benchmarkData = fs.readFileSync(benchmarkPath, "utf8");
+    const parsed = JSON.parse(benchmarkData);
+    const scores = parsed.scores as [string, number, number][];
+
+    const cpuList = scores.map((item) => ({
+      name: item[0],
+      score: item[1],
+      rank: item[2],
+    }));
+
+    const Fuse = require("fuse.js");
+    const fuse = new Fuse(cpuList, {
+      keys: ["name"],
+      threshold: 0.4,
+      minMatchCharLength: 3,
+    });
+
+    const results = fuse.search(cpuName);
+    if (results.length > 0) {
+      const match = results[0].item;
+      const score = Math.round(match.score / 100) / 10;
+      const rank = match.rank;
+
+      // Detect architecture type
+      let arch = "Unknown";
+      if (match.name.includes("Apple") || match.name.includes("ARM")) {
+        arch = "ARM";
+      } else if (match.name.includes("Intel")) {
+        arch = "Intel";
+      } else if (match.name.includes("AMD") || match.name.includes("Ryzen") || match.name.includes("EPYC")) {
+        arch = "AMD";
+      } else if (match.name.includes("Qualcomm")) {
+        arch = "ARM";
+      }
+
+      const result = `Geekbench 6: ${score}k (Rank #${rank}) - ${arch}`;
+      setCachedValue(context.cache, "cpu_bench_info", result);
+      return result;
+    }
+  } catch (e) {
+    // Silently fail
+  }
+
+  setCachedValue(context.cache, "cpu_bench_info", "");
+  return "";
+}
