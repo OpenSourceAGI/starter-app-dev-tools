@@ -34,7 +34,7 @@ export const colors = {
 // Default settings
 export const DEFAULT_SETTINGS = {
   display_order: [
-    ["user", "hostname", "os", "device", "kernel", "cpu", "gpu"],
+    ["user", "hostname", "os", "device", "kernel", "cpu", "gpu", "bench"],
     [
       "disk_used",
       "ram_used",
@@ -62,6 +62,7 @@ export const DEFAULT_SETTINGS = {
     os: "gray",
     cpu: "orange",
     gpu: "yellow",
+    bench: "red",
     device: "yellow",
     kernel: "green",
     shell: "orange",
@@ -90,6 +91,7 @@ export const DEFAULT_SETTINGS = {
     os: "⚡ ",
     cpu: "📈 ",
     gpu: "🎮 ",
+    bench: "💪 ",
     device: "💻 ",
     kernel: "🔧 ",
     shell: "🐚 ",
@@ -123,6 +125,7 @@ export const DEFAULT_SETTINGS = {
     os: "OS",
     cpu: "CPU",
     gpu: "GPU",
+    bench: "Bench",
     device: "Device",
     kernel: "Kernel",
     shell: "Shell",

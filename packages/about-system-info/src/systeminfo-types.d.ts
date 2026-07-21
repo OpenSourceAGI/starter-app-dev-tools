@@ -113,13 +113,26 @@ export interface SystemInfo {
    * Primary GPU identification (Linux systems primarily)
    * Extracted from lspci output when available
    * Empty string if no discrete GPU or detection fails
-   * 
+   *
    * @example
    * - "NVIDIA GeForce RTX 4070"
-   * - "AMD Radeon RX 6800 XT" 
+   * - "AMD Radeon RX 6800 XT"
    * - "Intel UHD Graphics 770"
    */
   gpu: string;
+
+  /**
+   * CPU benchmark score from Geekbench 6 multi-core
+   * Shows performance score (in thousands) and ranking position
+   * Uses fuzzy matching to find similar CPU models from top 1000 list
+   * Empty string if CPU not found or benchmark data unavailable
+   *
+   * @example
+   * - "💪 37.9k #1" (top performing CPU)
+   * - "💪 20.5k #68" (mid-range CPU)
+   * - "" (CPU not in benchmark database)
+   */
+  bench: string;
 
   /**
    * Device or computer model name

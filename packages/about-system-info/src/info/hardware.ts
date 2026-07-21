@@ -171,3 +171,56 @@ export function screen_resolution(): string {
   } catch {}
   return "";
 }
+
+/**
+ * Gets CPU benchmark score and rank from Geekbench 6 data
+ * Uses fuzzy matching to find similar CPU models
+ * @param context - Info context with cache
+ * @returns Benchmark info with score and rank, or empty string
+ * @example "💪 37.9k #1", "💪 20.5k #68"
+ */
+export function bench(context: InfoContext): string {
+  const cached = getCachedValue(context.cache, "bench");
+  if (cached) return cached;
+
+  const cpuName = cpu(context);
+  if (!cpuName) {
+    setCachedValue(context.cache, "bench", "");
+    return "";
+  }
+
+  try {
+    const benchmarkPath = new URL(
+      "../cpu-gb6-multicore-top1000.min.json",
+      import.meta.url
+    ).pathname;
+    const benchmarkData = fs.readFileSync(benchmarkPath, "utf8");
+    const parsed = JSON.parse(benchmarkData);
+    const scores = parsed.scores as [string, number, number][];
+
+    // Convert to objects for Fuse
+    const cpuList = scores.map((item) => ({ name: item[0], score: item[1], rank: item[2] }));
+
+    const Fuse = require("fuse.js");
+    const fuse = new Fuse(cpuList, {
+      keys: ["name"],
+      threshold: 0.4,
+      minMatchCharLength: 3,
+    });
+
+    const results = fuse.search(cpuName);
+    if (results.length > 0) {
+      const match = results[0].item;
+      const score = Math.round(match.score / 100) / 10;
+      const rank = match.rank;
+      const result = `💪 ${score}k #${rank}`;
+      setCachedValue(context.cache, "bench", result);
+      return result;
+    }
+  } catch (e) {
+    // Silently fail
+  }
+
+  setCachedValue(context.cache, "bench", "");
+  return "";
+}
