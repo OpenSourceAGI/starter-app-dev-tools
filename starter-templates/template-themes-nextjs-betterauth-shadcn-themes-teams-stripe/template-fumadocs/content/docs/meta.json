@@ -1,0 +1,23 @@
+{
+  "title": "Documentation",
+  "description": "Set up your documentation",
+  "icon": "Book",
+  "root": true,
+  "pages": [
+    "---Getting Started---",
+    "index",
+    "configuration",
+    "---Essentials---",
+    "cli",
+    "examples",
+    "testing",
+    "---Features---",
+    "Performance",
+    "compare-request-libs",
+    "---Code Map---",
+    "code-graph",
+    "---Guides---",
+    "claude-skill",
+    "...openapi-services"
+  ]
+}

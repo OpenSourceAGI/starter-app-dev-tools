@@ -1,0 +1,44 @@
+---
+title: Configuration
+description: Global defaults and instances
+icon: Settings
+---
+
+### Global Defaults Configuration
+
+```javascript
+// set directly
+grab.defaults.baseURL = "https://api.myapp.com/v1";
+grab.defaults.headers = {
+  Authorization: "Bearer your-token-here",
+};
+
+// method 2: Set defaults for all requests
+grab("", {
+  setDefaults: true,
+  baseURL: "https://api.myapp.com/v1",
+  timeout: 30, // 30 seconds
+  debug: true,
+  rateLimit: 1, // 1 second between requests
+  cache: false,
+  cancelOngoingIfNew: true,
+  headers: {
+    Authorization: "Bearer your-token-here",
+  },
+});
+
+```
+
+### Instance with Separate Defaults
+
+```javascript
+// separate defaults, headers, and interceptors for a third-party API
+const grabGoogleAPI = grab.instance({
+  headers: { Authorization: "Bearer 9e9wjeffkwf0sf" },
+  baseURL: "https://api.google.com/v1/",
+  debug: true,
+});
+const data = await grabGoogleAPI("/api/endpoint");
+
+// Options Order of Precedence: Request Call > Instance > User Globals > Package Defaults
+```
